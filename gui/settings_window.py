@@ -213,12 +213,12 @@ class SettingsWindow(tk.Toplevel):
         
         # randomize choice 
         cur_row += 1       
-        _label = ttk.Label(main_frame, text=self.st.lan().RANDOM_CHOICE)
+        _label = ttk.Label(main_frame, text="不随机阈值")
         _label.grid(row=cur_row, column=0, **args_label)
-        self.randomized_choice_var = tk.StringVar(value=self.st.ai_randomize_choice)
-        options = ['0 (Off)',1,2,3,4,5]
+        self.non_random_threshold = tk.StringVar(value=self.st.non_random_threshold)
+        options = [1,0.9,0.8,0.7]
         random_choice_entry = ttk.Combobox(
-            main_frame, textvariable=self.randomized_choice_var, values=options, state="readonly", width=std_wid)
+            main_frame, textvariable=self.non_random_threshold, values=options, state="readonly", width=std_wid)
         random_choice_entry.grid(row=cur_row, column=1, **args_entry)
         # reply emoji chance
         _label = ttk.Label(main_frame, text=self.st.lan().REPLY_EMOJI_CHANCE)
@@ -228,7 +228,40 @@ class SettingsWindow(tk.Toplevel):
         self.reply_emoji_var = tk.StringVar(value=f"{int(self.st.auto_reply_emoji_rate*100)}%")
         _combo = ttk.Combobox(
             main_frame, textvariable=self.reply_emoji_var, values=options, state="readonly", width=std_wid)
-        _combo.grid(row=cur_row, column=3, **args_entry)        
+        _combo.grid(row=cur_row, column=3, **args_entry)
+
+
+        cur_row += 1
+        _label = ttk.Label(main_frame, text="反向分配概率阈值")
+        _label.grid(row=cur_row, column=0, **args_label)
+        self.reverse_allocation_probability_threshold = tk.StringVar(value=self.st.reverse_allocation_probability_threshold)
+        options = [0.6,0.5,0.4,0.3]
+        random_choice_entry = ttk.Combobox(
+            main_frame, textvariable=self.reverse_allocation_probability_threshold, values=options, state="readonly", width=std_wid)
+        random_choice_entry.grid(row=cur_row, column=1, **args_entry)
+        _label = ttk.Label(main_frame, text="反向分配程度")
+        _label.grid(row=cur_row, column=2, **args_label)
+        self.reverse_allocation_probability_degree = tk.StringVar(value=self.st.reverse_allocation_probability_degree)
+        options = [0,0.05,0.1,0.15,0.2]
+        random_choice_entry = ttk.Combobox(
+            main_frame, textvariable=self.reverse_allocation_probability_degree, values=options, state="readonly", width=std_wid)
+        random_choice_entry.grid(row=cur_row, column=3, **args_entry)
+
+        cur_row += 1
+        _label = ttk.Label(main_frame, text="完全随机打牌概率")
+        _label.grid(row=cur_row, column=0, **args_label)
+        self.completely_random_probability = tk.StringVar(value=self.st.completely_random_probability)
+        options = [i*0.01 for i in range(3,10)]
+        random_choice_entry = ttk.Combobox(
+            main_frame, textvariable=self.completely_random_probability, values=options, state="readonly", width=std_wid)
+        random_choice_entry.grid(row=cur_row, column=1, **args_entry)
+        _label = ttk.Label(main_frame, text="概率截取阈值")
+        _label.grid(row=cur_row, column=2, **args_label)
+        self.probability_truncation_threshold = tk.StringVar(value=self.st.probability_truncation_threshold)
+        options = [0,0.025,0.05,0.075,0.1]
+        random_choice_entry = ttk.Combobox(
+            main_frame, textvariable=self.probability_truncation_threshold, values=options, state="readonly", width=std_wid)
+        random_choice_entry.grid(row=cur_row, column=3, **args_entry)
         
         # random delay lower/upper
         cur_row += 1

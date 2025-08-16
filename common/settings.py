@@ -54,7 +54,11 @@ class Settings:
         self.auto_reply_emoji_rate:float = self._get_value("auto_reply_emoji_rate", 0.3, lambda x: 0 <= x <= 1)
         self.auto_emoji_intervel:float = self._get_value("auto_emoji_intervel", 5.0, lambda x: 1.0 < x < 30.0)
         self.auto_dahai_drag:bool = self._get_value("auto_dahai_drag", True, self.valid_bool)
-        self.ai_randomize_choice:int = self._get_value("ai_randomize_choice", 1, lambda x: 0 <= x <= 5)
+        self.non_random_threshold:float = self._get_value("non_random_threshold", 0.9, lambda x: 0 <= x <= 1)
+        self.reverse_allocation_probability_threshold:float = self._get_value("reverse_allocation_probability_threshold", 0.5, lambda x: 0 <= x <= 1)
+        self.reverse_allocation_probability_degree:float = self._get_value("reverse_allocation_probability_degree", 0.1, lambda x: 0 <= x <= 1)
+        self.completely_random_probability:float = self._get_value("completely_random_probability", 0.05, lambda x: 0 <= x <= 1)
+        self.probability_truncation_threshold:float = self._get_value("probability_truncation_threshold", 0.025, lambda x: 0 <= x <= 1)
         self.delay_random_lower:float = self._get_value("delay_random_lower", 1, lambda x: 0 <= x )
         self.delay_random_upper:float = self._get_value(
             "delay_random_upper",max(2, self.delay_random_lower), lambda x: x >= self.delay_random_lower)

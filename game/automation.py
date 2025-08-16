@@ -1,4 +1,5 @@
 """ Game automation classes and algorithm"""
+import math
 # Design: generate action steps based on mjai action (Automation)
 # action steps are individual steps like delay, mouse click, etc. (ActionStep and derivatives)
 # Screen positions are in 16x9 resolution, and are translated to client resolution in execution
@@ -423,22 +424,98 @@ class Automation:
         self._task.start_action_steps(action_steps, game_state)
         return True
     
+    # def randomize_action(self, action:dict, gi:GameInfo) -> dict:
+    #     """ Randomize ai choice: pick according to probaility from top 3 options"""
+    #     n = self.st.ai_randomize_choice     # randomize strength. 0 = no random, 5 = according to probability
+    #     if n == 0:
+    #         return action
+    #     mjai_type = action['type']
+    #     if mjai_type == MjaiType.DAHAI:
+    #         orig_pai = action['pai']
+    #         options:dict = action['meta_options']            # e.g. {'1m':0.95, 'P':0.045, 'N':0.005, ...}
+    #         # get dahai options (tile only) from top 3
+    #         top_ops:list = [(k,v) for k,v in options[:3] if k in MJAI_TILES_SORTED]
+    #         #pick from top3 according to probability
+    #         power = 1 / (0.2 * n)
+    #         sum_probs = sum([v**power for k,v in top_ops])
+    #         top_ops_powered = [(k, v**power/sum_probs) for k,v in top_ops]
+    #
+    #         # 1. Calculate cumulative probabilities
+    #         cumulative_probs = [top_ops_powered[0][1]]
+    #         for i in range(1, len(top_ops_powered)):
+    #             cumulative_probs.append(cumulative_probs[-1] + top_ops_powered[i][1])
+    #
+    #         # 2. Pick an option based on a random number
+    #         rand_prob = random.random()  # Random float: 0.0 <= x < 1.0
+    #         chosen_pai = orig_pai  # Default in case no option is selected, for safety
+    #         prob = top_ops_powered[0][1]
+    #         for i, cum_prob in enumerate(cumulative_probs):
+    #             if rand_prob < cum_prob:
+    #                 chosen_pai = top_ops_powered[i][0]  # This is the selected key based on probability
+    #                 prob = top_ops_powered[i][1]        # the probability
+    #                 orig_prob = top_ops[i][1]
+    #                 break
+    #
+    #         if chosen_pai == orig_pai:  # return original action if no change
+    #             change_str = f"{action['pai']} Unchanged"
+    #         else:
+    #             change_str = f"{action['pai']} -> {chosen_pai}"
+    #
+    #         # generate new action for changed tile
+    #         tsumogiri = chosen_pai == gi.my_tsumohai
+    #         new_action = {
+    #             'type': MjaiType.DAHAI,
+    #             'actor': action['actor'],
+    #             'pai': chosen_pai,
+    #             'tsumogiri': tsumogiri
+    #         }
+    #         msg = f"Randomized dahai: {change_str} ([{n}] {orig_prob*100:.1f}% -> {prob*100:.1f}%)"
+    #         LOGGER.debug(msg)
+    #         return new_action
+    #     # other MJAI types
+    #     else:
+    #         return action
+
     def randomize_action(self, action:dict, gi:GameInfo) -> dict:
         """ Randomize ai choice: pick according to probaility from top 3 options"""
-        n = self.st.ai_randomize_choice     # randomize strength. 0 = no random, 5 = according to probability
-        if n == 0:
-            return action
+        a=self.st.non_random_threshold
+        b=self.st.reverse_allocation_probability_threshold
+        c=self.st.reverse_allocation_probability_degree
+        d=self.st.completely_random_probability
+        e=self.st.probability_truncation_threshold
+
         mjai_type = action['type']
         if mjai_type == MjaiType.DAHAI:
             orig_pai = action['pai']
             options:dict = action['meta_options']            # e.g. {'1m':0.95, 'P':0.045, 'N':0.005, ...}
-            # get dahai options (tile only) from top 3
-            top_ops:list = [(k,v) for k,v in options[:3] if k in MJAI_TILES_SORTED]        
+            top_ops:list = [(k,v) for k,v in options[:6] if k in MJAI_TILES_SORTED]
             #pick from top3 according to probability
-            power = 1 / (0.2 * n)
-            sum_probs = sum([v**power for k,v in top_ops])
-            top_ops_powered = [(k, v**power/sum_probs) for k,v in top_ops]
-            
+            if top_ops[0][1]>=a:
+                top_ops_powered=top_ops[0][0],1
+            else:
+                # 截取列表
+                for i,item in enumerate(top_ops):
+                    if item[1]<e:
+                        top_ops=top_ops[:i]
+                # 有5%选择最后一位
+                if random.random()<d:
+                    top_ops_powered=top_ops[-1][0],1
+                else:
+                    if top_ops[0][1]<=b:
+                        transformed=[]
+                        for k,v in top_ops:
+                            transformed.append((k,-math.log(v)))
+                        top_ops=transformed
+                    else:
+                        transformed=[]
+                        num=len(top_ops)
+                        for k,v in top_ops:
+                            transformed.append((k,v*(1-c)+1/num*c))
+                        top_ops=transformed
+
+                    sum_probs = sum([v for k,v in top_ops])
+                    top_ops_powered = [(k, v/sum_probs) for k,v in top_ops]
+
             # 1. Calculate cumulative probabilities
             cumulative_probs = [top_ops_powered[0][1]]
             for i in range(1, len(top_ops_powered)):
@@ -454,12 +531,12 @@ class Automation:
                     prob = top_ops_powered[i][1]        # the probability
                     orig_prob = top_ops[i][1]
                     break
-                
+
             if chosen_pai == orig_pai:  # return original action if no change
                 change_str = f"{action['pai']} Unchanged"
             else:
                 change_str = f"{action['pai']} -> {chosen_pai}"
-            
+
             # generate new action for changed tile
             tsumogiri = chosen_pai == gi.my_tsumohai
             new_action = {
@@ -468,7 +545,7 @@ class Automation:
                 'pai': chosen_pai,
                 'tsumogiri': tsumogiri
             }
-            msg = f"Randomized dahai: {change_str} ([{n}] {orig_prob*100:.1f}% -> {prob*100:.1f}%)"
+            msg = f"Randomized dahai: {change_str} ( {orig_prob*100:.1f}% -> {prob*100:.1f}%)"
             LOGGER.debug(msg)
             return new_action
         # other MJAI types
