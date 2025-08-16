@@ -16,8 +16,8 @@ class SettingsWindow(tk.Toplevel):
         super().__init__(parent)
         self.st = setting
 
-        self.geometry('700x675')
-        self.minsize(700,675)        
+        self.geometry('700x725')
+        self.minsize(700,725)
         # self.resizable(False, False)
         # set position: within main window
         parent_x = parent.winfo_x()
@@ -215,7 +215,7 @@ class SettingsWindow(tk.Toplevel):
         cur_row += 1       
         _label = ttk.Label(main_frame, text="不随机阈值")
         _label.grid(row=cur_row, column=0, **args_label)
-        self.non_random_threshold = tk.StringVar(value=self.st.non_random_threshold)
+        self.non_random_threshold = tk.DoubleVar(value=self.st.non_random_threshold)
         options = [1,0.9,0.8,0.7]
         random_choice_entry = ttk.Combobox(
             main_frame, textvariable=self.non_random_threshold, values=options, state="readonly", width=std_wid)
@@ -234,14 +234,14 @@ class SettingsWindow(tk.Toplevel):
         cur_row += 1
         _label = ttk.Label(main_frame, text="反向分配概率阈值")
         _label.grid(row=cur_row, column=0, **args_label)
-        self.reverse_allocation_probability_threshold = tk.StringVar(value=self.st.reverse_allocation_probability_threshold)
+        self.reverse_allocation_probability_threshold = tk.DoubleVar(value=self.st.reverse_allocation_probability_threshold)
         options = [0.6,0.5,0.4,0.3]
         random_choice_entry = ttk.Combobox(
             main_frame, textvariable=self.reverse_allocation_probability_threshold, values=options, state="readonly", width=std_wid)
         random_choice_entry.grid(row=cur_row, column=1, **args_entry)
         _label = ttk.Label(main_frame, text="反向分配程度")
         _label.grid(row=cur_row, column=2, **args_label)
-        self.reverse_allocation_probability_degree = tk.StringVar(value=self.st.reverse_allocation_probability_degree)
+        self.reverse_allocation_probability_degree = tk.DoubleVar(value=self.st.reverse_allocation_probability_degree)
         options = [0,0.05,0.1,0.15,0.2]
         random_choice_entry = ttk.Combobox(
             main_frame, textvariable=self.reverse_allocation_probability_degree, values=options, state="readonly", width=std_wid)
@@ -250,14 +250,14 @@ class SettingsWindow(tk.Toplevel):
         cur_row += 1
         _label = ttk.Label(main_frame, text="完全随机打牌概率")
         _label.grid(row=cur_row, column=0, **args_label)
-        self.completely_random_probability = tk.StringVar(value=self.st.completely_random_probability)
+        self.completely_random_probability = tk.DoubleVar(value=self.st.completely_random_probability)
         options = [i*0.01 for i in range(3,10)]
         random_choice_entry = ttk.Combobox(
             main_frame, textvariable=self.completely_random_probability, values=options, state="readonly", width=std_wid)
         random_choice_entry.grid(row=cur_row, column=1, **args_entry)
         _label = ttk.Label(main_frame, text="概率截取阈值")
         _label.grid(row=cur_row, column=2, **args_label)
-        self.probability_truncation_threshold = tk.StringVar(value=self.st.probability_truncation_threshold)
+        self.probability_truncation_threshold = tk.DoubleVar(value=self.st.probability_truncation_threshold)
         options = [0,0.025,0.05,0.075,0.1]
         random_choice_entry = ttk.Combobox(
             main_frame, textvariable=self.probability_truncation_threshold, values=options, state="readonly", width=std_wid)
@@ -343,7 +343,6 @@ class SettingsWindow(tk.Toplevel):
             self.model_updated = True
         
         # auto play settings
-        randomized_choice_new:int = int(self.randomized_choice_var.get().split(' ')[0])
         reply_emoji_new:float = int(self.reply_emoji_var.get().split('%')[0])/100
         try:
             delay_lower_new = self.delay_random_lower_var.get()
@@ -378,7 +377,11 @@ class SettingsWindow(tk.Toplevel):
         self.st.auto_idle_move = self.auto_idle_move_var.get()
         self.st.auto_dahai_drag = self.auto_drag_dahai_var.get()
         self.st.auto_random_move = self.random_move_var.get()
-        self.st.ai_randomize_choice = randomized_choice_new
+        self.st.non_random_threshold = self.non_random_threshold.get()
+        self.reverse_allocation_probability_threshold = self.reverse_allocation_probability_threshold.get()
+        self.reverse_allocation_probability_degree = self.reverse_allocation_probability_degree.get()
+        self.completely_random_probability = self.completely_random_probability.get()
+        self.probability_truncation_threshold = self.probability_truncation_threshold.get()
         self.st.auto_reply_emoji_rate = reply_emoji_new        
         self.st.delay_random_lower = delay_lower_new
         self.st.delay_random_upper = delay_upper_new

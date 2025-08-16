@@ -388,9 +388,8 @@ class Automation:
         assert gi is not None, "Game info is None"
         op_step = game_state.last_op_step
         mjai_type = mjai_action['type']        
-        
-        if self.st.ai_randomize_choice:     # randomize choice
-            mjai_action = self.randomize_action(mjai_action, gi) 
+
+        mjai_action = self.randomize_action(mjai_action, gi)
         # Dahai action
         if  mjai_type == MjaiType.DAHAI:       
             if gi.self_reached:
@@ -491,7 +490,7 @@ class Automation:
             top_ops:list = [(k,v) for k,v in options[:6] if k in MJAI_TILES_SORTED]
             #pick from top3 according to probability
             if top_ops[0][1]>=a:
-                top_ops_powered=top_ops[0][0],1
+                top_ops_powered=[(top_ops[0][0],1)]
             else:
                 # 截取列表
                 for i,item in enumerate(top_ops):
@@ -499,22 +498,22 @@ class Automation:
                         top_ops=top_ops[:i]
                 # 有5%选择最后一位
                 if random.random()<d:
-                    top_ops_powered=top_ops[-1][0],1
+                    top_ops_powered=[(top_ops[-1][0],1)]
                 else:
                     if top_ops[0][1]<=b:
                         transformed=[]
                         for k,v in top_ops:
                             transformed.append((k,-math.log(v)))
-                        top_ops=transformed
+                        top_ops_tmp=transformed
                     else:
                         transformed=[]
                         num=len(top_ops)
                         for k,v in top_ops:
                             transformed.append((k,v*(1-c)+1/num*c))
-                        top_ops=transformed
+                        top_ops_tmp=transformed
 
-                    sum_probs = sum([v for k,v in top_ops])
-                    top_ops_powered = [(k, v/sum_probs) for k,v in top_ops]
+                    sum_probs = sum([v for k,v in top_ops_tmp])
+                    top_ops_powered = [(k, v/sum_probs) for k,v in top_ops_tmp]
 
             # 1. Calculate cumulative probabilities
             cumulative_probs = [top_ops_powered[0][1]]
