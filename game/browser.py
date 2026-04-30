@@ -1,51 +1,52 @@
 """ Game Broswer class for controlling maj-soul web client operations"""
 import logging
-import time
-import threading
 import queue
-import os
-
+import threading
+import time
 from io import BytesIO
+
 from playwright._impl._errors import TargetClosedError
 from playwright.sync_api import sync_playwright, BrowserContext, Page
+
 from common import utils
-from common.utils import Folder, FPSCounter, list_children
 from common.log_helper import LOGGER
+from common.utils import Folder, list_children
+
 
 class GameBrowser:
     """ Wrapper for Playwright browser controlling maj-soul operations
     Browser runs in a thread, and actions are queued to be processed by the thread"""
 
-    def __init__(self, width:int, height:int):
+    def __init__(self, width: int, height: int):
         """ Set browser with viewport size (width, height)"""
         self.width = width
         self.height = height
-        self._action_queue = queue.Queue()       # thread safe queue for actions
-        self._stop_event = threading.Event()    # set this event to stop processing actions
+        self._action_queue = queue.Queue()  # thread safe queue for actions
+        self._stop_event = threading.Event()  # set this event to stop processing actions
         self._browser_thread = None
 
         self.init_vars()
 
     def init_vars(self):
         """ initialize internal variables"""
-        self.context:BrowserContext = None
-        self.page:Page = None        # playwright page, only used by thread
-        self.fps_counter = FPSCounter()
+        self.context: BrowserContext = None
+        self.page: Page = None  # playwright page, only used by thread
 
         # for tracking page info
-        self._page_title:str = None
-        self._last_update_time:float = 0
-        self.zoomlevel_check:float = None
+        self._page_title: str = None
+        self._last_update_time: float = 0
+        self.zoomlevel_check: float = None
 
         # overlay info
-        self._canvas_id = None              # for overlay
+        self._canvas_id = None  # for overlay
         self._last_botleft_text = None
         self._last_guide = None
 
     def __del__(self):
         self.stop()
 
-    def start(self, url:str, proxy:str=None, width:int=None, height:int=None, enable_chrome_ext:bool=False):
+    def start(self, url: str, proxy: str = None, width: int = None, height: int = None,
+              enable_chrome_ext: bool = False):
         """ Launch the browser in a thread, and start processing action queue
         params:
             url(str): url of the page to open upon browser launch
@@ -70,10 +71,9 @@ class GameBrowser:
             daemon=True)
         self._browser_thread.start()
 
-
-    def _run_browser_and_action_queue(self, url:str, proxy:str, enable_chrome_ext:bool=False):
+    def _run_browser_and_action_queue(self, url: str, proxy: str, enable_chrome_ext: bool = False):
         """ run browser and keep processing action queue (blocking)"""
-        
+
         if proxy:
             proxy_object = {"server": proxy}
         else:
@@ -131,8 +131,12 @@ class GameBrowser:
             try:
                 self.page = self.context.new_page()
                 self.page.goto(url)
+                if len(self.context.pages) == 2:
+                    initial_page = self.context.pages[0]
+                    initial_page.close()
+
             except Exception as e:
-                LOGGER.error('Error opening page. Check if certificate is installed. \n%s',e)
+                LOGGER.error('Error opening page. Check if certificate is installed. \n%s', e)
 
             # # Do not allow new page tab
             # def on_page(page:Page):
@@ -145,8 +149,7 @@ class GameBrowser:
             self._clear_action_queue()
             # keep running actions until stop event is set
             while self._stop_event.is_set() is False:
-                self.fps_counter.frame()
-                try:        # test if page is stil alive
+                try:  # test if page is stil alive
                     if time.time() - self._last_update_time > 1:
                         self._page_title = self.page.title()
                         # check zoom level
@@ -176,7 +179,7 @@ class GameBrowser:
                 # ok if closed already
                 pass
             except Exception as e:
-                LOGGER.error('Error closing browser: %s', e ,exc_info=True)
+                LOGGER.error('Error closing browser: %s', e, exc_info=True)
             self.init_vars()
         return
 
@@ -188,7 +191,7 @@ class GameBrowser:
             except queue.Empty:
                 break
 
-    def stop(self, join_thread:bool=False):
+    def stop(self, join_thread: bool = False):
         """ Shutdown browser thread"""
         if self.is_running():
             self._stop_event.set()
@@ -219,7 +222,7 @@ class GameBrowser:
             return False
         return True
 
-    def mouse_move(self, x:int, y:int, steps:int=5, blocking:bool=False):
+    def mouse_move(self, x: int, y: int, steps: int = 5, blocking: bool = False):
         """ Queue action: mouse move to (x,y) on viewport
         if block, wait until action is done"""
         finish_event = threading.Event()
@@ -227,7 +230,7 @@ class GameBrowser:
         if blocking:
             finish_event.wait()
 
-    def mouse_click(self, delay:float=80, blocking:bool=False):
+    def mouse_click(self, delay: float = 80, blocking: bool = False):
         """ Queue action: mouse click at (x,y) on viewport
         if block, wait until action is done"""
         finish_event = threading.Event()
@@ -235,21 +238,21 @@ class GameBrowser:
         if blocking:
             finish_event.wait()
 
-    def mouse_down(self, blocking:bool=False):
+    def mouse_down(self, blocking: bool = False):
         """ Queue action: mouse down on page"""
         finish_event = threading.Event()
         self._action_queue.put(lambda: self._action_mouse_down(finish_event))
         if blocking:
             finish_event.wait()
 
-    def mouse_up(self,blocking:bool=False):
+    def mouse_up(self, blocking: bool = False):
         """ Queue action: mouse up on page"""
         finish_event = threading.Event()
         self._action_queue.put(lambda: self._action_mouse_up(finish_event))
         if blocking:
             finish_event.wait()
 
-    def mouse_wheel(self, dx:float, dy:float, blocking:bool=False):
+    def mouse_wheel(self, dx: float, dy: float, blocking: bool = False):
         """ Queue action for mouse wheel"""
         finish_event = threading.Event()
         self._action_queue.put(lambda: self._action_mouse_wheel(dx, dy, finish_event))
@@ -270,7 +273,7 @@ class GameBrowser:
         """ Queue action: Stop showing the overlay"""
         self._action_queue.put(self._action_stop_overlay)
 
-    def overlay_update_guidance(self, guide_str:str, option_subtitle:str, options:list):
+    def overlay_update_guidance(self, guide_str: str, option_subtitle: str, options: list):
         """ Queue action: update text area
         params:
             guide_str(str): AI guide str (recommendation action)
@@ -286,15 +289,14 @@ class GameBrowser:
             return
         self._action_queue.put(self._action_overlay_clear_guide)
 
-    def overlay_update_botleft(self, text:str):
+    def overlay_update_botleft(self, text: str):
         """ update bot-left corner text area
         params:
             text(str): Text, can have linebreak '\n'. None to clear text
         """
-        if text == self._last_botleft_text:     # skip if same text
+        if text == self._last_botleft_text:  # skip if same text
             return
         self._action_queue.put(lambda: self._action_overlay_update_botleft(text))
-
 
     def screen_shot(self) -> bytes | None:
         """ Take broswer page screenshot and return buff if success, or None if not"""
@@ -303,7 +305,7 @@ class GameBrowser:
         res_queue = queue.Queue()
         try:
             self._action_queue.put(lambda: self._action_screen_shot(res_queue))
-            res:BytesIO = res_queue.get(True,5)
+            res: BytesIO = res_queue.get(True, 5)
         except queue.Empty:
             return None
         except Exception as e:
@@ -315,30 +317,30 @@ class GameBrowser:
         else:
             return res
 
-    def _action_mouse_move(self, x:int, y:int, steps:int, finish_event:threading.Event):
+    def _action_mouse_move(self, x: int, y: int, steps: int, finish_event: threading.Event):
         """ move mouse to (x,y) with steps, and set finish_event when done"""
         self.page.mouse.move(x=x, y=y, steps=steps)
         finish_event.set()
 
-    def _action_mouse_click(self, delay:float, finish_event:threading.Event):
+    def _action_mouse_click(self, delay: float, finish_event: threading.Event):
         """ mouse click on page at (x,y)"""
         # self.page.mouse.click(x=x, y=y, delay=delay)
         self.page.mouse.down()
-        time.sleep(delay/1000)
+        time.sleep(delay / 1000)
         self.page.mouse.up()
         finish_event.set()
 
-    def _action_mouse_down(self, finish_event:threading.Event):
+    def _action_mouse_down(self, finish_event: threading.Event):
         """ mouse down on page"""
         self.page.mouse.down()
         finish_event.set()
 
-    def _action_mouse_up(self, finish_event:threading.Event):
+    def _action_mouse_up(self, finish_event: threading.Event):
         """ mouse up on page"""
         self.page.mouse.up()
         finish_event.set()
 
-    def _action_mouse_wheel(self, dx:float, dy:float, finish_event:threading.Event):
+    def _action_mouse_wheel(self, dx: float, dy: float, finish_event: threading.Event):
         self.page.mouse.wheel(dx, dy)
         finish_event.set()
 
@@ -349,9 +351,9 @@ class GameBrowser:
     def _action_start_overlay(self):
         """ Display overlay on page. Will ignore if already exist, or page is None"""
 
-        if self.is_overlay_working():   # skip if overlay already working
+        if self.is_overlay_working():  # skip if overlay already working
             return
-        self._canvas_id = utils.random_str(8) # random 8-byte alpha-numeric string
+        self._canvas_id = utils.random_str(8)  # random 8-byte alpha-numeric string
         js_code = f"""(() => {{
             // Create a canvas element and add it to the document body
             const canvas = document.createElement('canvas');
@@ -386,8 +388,8 @@ class GameBrowser:
         self._last_guide = None
 
     def _overlay_text_params(self):
-        font_size = int(self.height/45)  # e.g., 22
-        line_space = int(self.height/45/2)
+        font_size = int(self.height / 45)  # e.g., 22
+        line_space = int(self.height / 45 / 2)
         min_box_width = font_size * 15  # Minimum box width
         initial_box_height = line_space * 2 + (font_size + line_space) * 6  # based on number of lines
         box_top = int(self.height * 0.44)  # Distance from the top
@@ -400,7 +402,7 @@ class GameBrowser:
 
         font_size, line_space, min_box_width, initial_box_height, box_top, box_left = self._overlay_text_params()
         if options:
-            options_data = [[text, f"{perc*100:4.0f}%"] for text, perc in options]
+            options_data = [[text, f"{perc * 100:4.0f}%"] for text, perc in options]
         else:
             options_data = []
 
@@ -471,15 +473,15 @@ class GameBrowser:
         self.page.evaluate(js_code)
         self._last_guide = None
 
-    def _action_overlay_update_botleft(self, text:str=None):
+    def _action_overlay_update_botleft(self, text: str = None):
         if self.is_overlay_working() is False:
             return
 
-        font_size = int(self.height/48)
+        font_size = int(self.height / 48)
         box_top = 0.885
         box_left = 0
         box_width = 0.115
-        box_height = 1- box_top
+        box_height = 1 - box_top
 
         # Escape JavaScript special characters and convert newlines
         js_text = text.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n') if text else ''
@@ -525,20 +527,19 @@ class GameBrowser:
         self.page.evaluate(js_code)
         self._last_botleft_text = text
 
-    def _overlay_update_indicators(self, bars:list):
+    def _overlay_update_indicators(self, bars: list):
         """ Update the indicators on overlay """
         # TODO
-        for x,y,height in bars:
+        for x, y, height in bars:
             pass
 
-
-    def _action_screen_shot(self, res_queue:queue.Queue, time_ms:int=5000):
+    def _action_screen_shot(self, res_queue: queue.Queue, time_ms: int = 5000):
         """ take screen shot from browser page
         Params:
             res_queue: queue for saving the image buff data"""
         if self.is_page_normal():
             try:
-                ss_bytes:BytesIO = self.page.screenshot(timeout=time_ms)
+                ss_bytes: BytesIO = self.page.screenshot(timeout=time_ms)
                 res_queue.put(ss_bytes)
             except Exception as e:
                 LOGGER.error("Error taking screenshot: %s", e, exc_info=True)

@@ -1,7 +1,8 @@
 """ Engine for Akagi OT model"""
 
-import json
 import gzip
+import json
+
 import requests
 
 from common.log_helper import LOGGER
@@ -10,32 +11,32 @@ from common.utils import BotNotSupportingMode, GameMode
 
 class MortalEngineAkagiOt:
     """ Mortal Engine for Akagi OT"""
+
     def __init__(
-        self,
-        api_key:str = None, server:str = None,
-        mode:GameMode=GameMode.MJ4P,
-        timeout:int=3, retries:int=3):
-        
+            self,
+            api_key: str = None, server: str = None,
+            mode: GameMode = GameMode.MJ4P,
+            timeout: int = 3, retries: int = 3):
+
         self.name = "MortalEngineAkagiOt"
         self.is_oracle = False
         self.version = 4
         self.enable_quick_eval = False
         self.enable_rule_based_agari_guard = False
-        
+
         self.api_key = api_key
         self.server = server
         self.mode = mode
         self.timeout = timeout
         self.retries = retries
-        
+
         if self.mode == GameMode.MJ4P:
             self.api_path = r"/react_batch"
         elif self.mode == GameMode.MJ3P:
             self.api_path = r"/react_batch_3p"
         else:
             raise BotNotSupportingMode(self.mode)
-        
-        
+
     def react_batch(self, obs, masks, _invisible_obs):
         """ react_batch for mjai.Bot to call"""
         list_obs = [o.tolist() for o in obs]
@@ -50,23 +51,23 @@ class MortalEngineAkagiOt:
             'Authorization': self.api_key,
             'Content-Encoding': 'gzip',
         }
-        
+
         # retry multiple times to post and get response
         for attempt in range(self.retries):
             try:
                 r = requests.post(f'{self.server}{self.api_path}',
-                    headers=headers,
-                    data=compressed_data,
-                    timeout=self.timeout)
+                                  headers=headers,
+                                  data=compressed_data,
+                                  timeout=self.timeout)
                 break
             except requests.exceptions.Timeout:
-                LOGGER.warning("AkagiOT api timeout, attempt %d/%d", attempt+1, self.retries)
+                LOGGER.warning("AkagiOT api timeout, attempt %d/%d", attempt + 1, self.retries)
                 r = None
                 continue
-        
+
         if r is None:
-            raise RuntimeError("AkagiOT API all retries failed.")            
-            
+            raise RuntimeError("AkagiOT API all retries failed.")
+
         if r.status_code != 200:
             r.raise_for_status()
         r_json = r.json()

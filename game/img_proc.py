@@ -1,14 +1,16 @@
 """ image processing and visual analysis for Majsoul game screen"""
-from enum import Enum, auto
 import io
+from enum import Enum, auto
+
 from PIL import Image, ImageChops, ImageStat
+
 import common.utils as utils
-from common.utils import Folder
 from common.log_helper import LOGGER
+from common.utils import Folder
 from .browser import GameBrowser
 
 
-def img_avg_diff(base_img:Image.Image, input_img:Image.Image, mask_img:Image.Image = None) -> float:
+def img_avg_diff(base_img: Image.Image, input_img: Image.Image, mask_img: Image.Image = None) -> float:
     """ Calculate the average difference between two images.
     given an optional mask file (black indicates ignored pixels).
     input image will be resized to mask size, or size of base_img if mask N/A
@@ -27,48 +29,48 @@ def img_avg_diff(base_img:Image.Image, input_img:Image.Image, mask_img:Image.Ima
     else:
         img_size = base_img.size
     input_img = input_img.resize(img_size, Image.Resampling.LANCZOS)
-    
-    if mask_img:    # apply mask if there is
+
+    if mask_img:  # apply mask if there is
         # Set all non-black pixels to white
         modified_mask = mask_img.point(lambda p: 255 if p != 0 else 0)
-    
+
         # Apply the modified mask
         base_img.putalpha(modified_mask)
         input_img.putalpha(modified_mask)
         base_img = Image.composite(base_img, Image.new('RGB', base_img.size, 'white'), modified_mask)
         input_img = Image.composite(input_img, Image.new('RGB', input_img.size, 'white'), modified_mask)
-    
+
     # Compare the images (after applying the mask)
     diff = ImageChops.difference(base_img, input_img)
     stat = ImageStat.Stat(diff, mask=modified_mask)  # Use modified mask to ignore black pixels
-    
+
     # Calculate the average difference only for non-ignored pixels
     non_ignored_pixels = sum(modified_mask.point(lambda p: p > 0 and 255).convert("L").point(bool).getdata())
     # Correct calculation of average difference
     if non_ignored_pixels:
         avg_diff = sum(stat.mean) / len(stat.mean)
     else:
-        avg_diff = 0    
+        avg_diff = 0
     return avg_diff
 
 
 class ImgTemp(Enum):
     """ game image templates"""
     MAIN_MENU = auto()
-    
+
 
 class GameVisual:
     """ image analysis for game screen"""
-    
-    def __init__(self, browser:GameBrowser) -> None:
+
+    def __init__(self, browser: GameBrowser) -> None:
         self.browser = browser
         if not browser:
             raise ValueError("Browser is None")
-        
+
         self.temp_dict = {}
         """ image template dict {ImgTemp: (image_file, mask_file), ...}"""
         self._load_imgs()
-        
+
     def _load_imgs(self) -> None:
         """ load all template images"""
         files = [
@@ -81,8 +83,7 @@ class GameVisual:
             mask_mainmenu = Image.open(mask_file).convert('L')
             self.temp_dict[loc] = (img_mainmenu, mask_mainmenu)
 
-
-    def comp_temp(self, tmp:ImgTemp, thres:float=30) -> tuple[bool, float]:
+    def comp_temp(self, tmp: ImgTemp, thres: float = 30) -> tuple[bool, float]:
         """ compare current screen to template
         params:
             tmp (ImgTemp): template img to compare to

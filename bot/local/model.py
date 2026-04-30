@@ -1,8 +1,9 @@
 """ Model related classes that support Mortal engine """
-#pylint:disable=no-member, C0115, C0116
-from itertools import permutations
 from functools import partial
+# pylint:disable=no-member, C0115, C0116
+from itertools import permutations
 from typing import Optional, Tuple, Union
+
 import torch
 from torch import nn, Tensor
 from torch.nn.utils.rnn import pack_padded_sequence, pad_sequence
@@ -33,14 +34,15 @@ class ChannelAttention(nn.Module):
         x = weight.unsqueeze(-1) * x
         return x
 
+
 class ResBlock(nn.Module):
     def __init__(
-        self,
-        channels,
-        *,
-        norm_builder = nn.Identity,
-        actv_builder = nn.ReLU,
-        pre_actv = False,
+            self,
+            channels,
+            *,
+            norm_builder=nn.Identity,
+            actv_builder=nn.ReLU,
+            pre_actv=False,
     ):
         super().__init__()
         self.pre_actv = pre_actv
@@ -73,16 +75,17 @@ class ResBlock(nn.Module):
             out = self.actv(out)
         return out
 
+
 class ResNet(nn.Module):
     def __init__(
-        self,
-        in_channels,
-        conv_channels,
-        num_blocks,
-        *,
-        norm_builder = nn.Identity,
-        actv_builder = nn.ReLU,
-        pre_actv = False,
+            self,
+            in_channels,
+            conv_channels,
+            num_blocks,
+            *,
+            norm_builder=nn.Identity,
+            actv_builder=nn.ReLU,
+            pre_actv=False,
     ):
         super().__init__()
 
@@ -90,9 +93,9 @@ class ResNet(nn.Module):
         for _ in range(num_blocks):
             blocks.append(ResBlock(
                 conv_channels,
-                norm_builder = norm_builder,
-                actv_builder = actv_builder,
-                pre_actv = pre_actv,
+                norm_builder=norm_builder,
+                actv_builder=actv_builder,
+                pre_actv=pre_actv,
             ))
 
         layers = [nn.Conv1d(in_channels, conv_channels, kernel_size=3, padding=1, bias=False)]
@@ -110,6 +113,7 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         return self.net(x)
+
 
 class Brain(nn.Module):
     def __init__(self, *, conv_channels, num_blocks, is_oracle=False, version=1):
@@ -143,12 +147,12 @@ class Brain(nn.Module):
                 raise ValueError(f'Unexpected version {self.version}')
 
         self.encoder = ResNet(
-            in_channels = in_channels,
-            conv_channels = conv_channels,
-            num_blocks = num_blocks,
-            norm_builder = norm_builder,
-            actv_builder = actv_builder,
-            pre_actv = pre_actv,
+            in_channels=in_channels,
+            conv_channels=conv_channels,
+            num_blocks=num_blocks,
+            norm_builder=norm_builder,
+            actv_builder=actv_builder,
+            pre_actv=pre_actv,
         )
         self.actv = actv_builder()
 
@@ -191,6 +195,7 @@ class Brain(nn.Module):
         self._freeze_bn = value
         return self.train(self.training)
 
+
 class AuxNet(nn.Module):
     def __init__(self, dims=None):
         super().__init__()
@@ -199,6 +204,7 @@ class AuxNet(nn.Module):
 
     def forward(self, x):
         return self.net(x).split(self.dims, dim=-1)
+
 
 class DQN(nn.Module):
     def __init__(self, *, version=1):
@@ -236,10 +242,12 @@ class DQN(nn.Module):
         q = (v + a - a_mean).masked_fill(~mask, -torch.inf)
         return q
 
+
 class GRP(nn.Module):
     def __init__(self, hidden_size=64, num_layers=2):
         super().__init__()
-        self.rnn = nn.GRU(input_size=libriichi.consts.GRP_SIZE, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        self.rnn = nn.GRU(input_size=libriichi.consts.GRP_SIZE, hidden_size=hidden_size, num_layers=num_layers,
+                          batch_first=True)
         self.fc = nn.Sequential(
             nn.Linear(hidden_size * num_layers, hidden_size * num_layers),
             nn.ReLU(inplace=True),
@@ -251,8 +259,8 @@ class GRP(nn.Module):
         # perms are the permutations of all possible rank-by-player result
         perms = torch.tensor(list(permutations(range(4))))
         perms_t = perms.transpose(0, 1)
-        self.register_buffer('perms', perms)     # (24, 4)
-        self.register_buffer('perms_t', perms_t) # (4, 24)
+        self.register_buffer('perms', perms)  # (24, 4)
+        self.register_buffer('perms_t', perms_t)  # (4, 24)
 
     # input: [grand_kyoku, honba, kyotaku, s[0], s[1], s[2], s[3]]
     # grand_kyoku: E1 = 0, S4 = 7, W4 = 11

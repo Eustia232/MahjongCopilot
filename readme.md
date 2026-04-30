@@ -6,10 +6,12 @@
 <br>
 Click to <a href="https://discord.gg/7hcZYTFw5r" target="_blank">Join Discord</a>
 
-Mahjong AI Assistant for Majsoul, based on mjai (Mortal model) bot impelementaion. When you are in a Majsoul game, AI will give you step-by-step guidance. Now supports Majsoul 3-person and 4-person game modes.
+Mahjong AI Assistant for Majsoul, based on mjai (Mortal model) bot impelementaion. When you are in a Majsoul game, AI
+will give you step-by-step guidance. Now supports Majsoul 3-person and 4-person game modes.
 
 下载、帮助和更多信息请访问网站 Please see website for download, help, and more information  
-<a href="https://mjcopilot.com/help" target="_blank">帮助信息 Help Info </a> | <a href="https://mjcopilot.com" target="_blank">https://mjcopilot.com</a>
+<a href="https://mjcopilot.com/help" target="_blank">帮助信息 Help
+Info </a> | <a href="https://mjcopilot.com" target="_blank">https://mjcopilot.com</a>
 
 ---
 
@@ -50,6 +52,7 @@ Features:
 5. Main entry: main.py
 
 ### 示例脚本 Sample script：
+
 ```batch
 git clone https://github.com/latorc/MahjongCopilot.git
 cd MahjongCopilot
@@ -60,11 +63,16 @@ set PLAYWRIGHT_BROWSERS_PATH=0
 playwright install chromium
 python main.py
 ```
-### 配置模型
-本程序支持几种模型来源。其中，本地模型（Local）是基于 Akagi 兼容的 Mortal 模型。要获取 Akagi 的模型，请参见 <a href="https://github.com/shinkuan/Akagi" target="_blank"> Akagi Github </a> 的说明。
-### Model Configuration
-This program supports different types of AI models. The 'Local' Model type uses Mortal models compatible with Akagi. To acquire Akagi's models, please refer to <a href="https://github.com/shinkuan/Akagi" target="_blank"> Akagi Github </a>.
 
+### 配置模型
+
+本程序支持几种模型来源。其中，本地模型（Local）是基于 Akagi 兼容的 Mortal 模型。要获取 Akagi
+的模型，请参见 <a href="https://github.com/shinkuan/Akagi" target="_blank"> Akagi Github </a> 的说明。
+
+### Model Configuration
+
+This program supports different types of AI models. The 'Local' Model type uses Mortal models compatible with Akagi. To
+acquire Akagi's models, please refer to <a href="https://github.com/shinkuan/Akagi" target="_blank"> Akagi Github </a>.
 
 ## 截图 / Screenshots
 
@@ -83,11 +91,11 @@ This program supports different types of AI models. The 'Local' Model type uses 
 
 ![](assets/design_struct.png)
 
-  
 目录说明 Description for folders：
+
 * gui: tkinter GUI 相关类 / tkinter GUI related classes
 * game: 雀魂游戏相关类 / classes related to Majsoul game
-* bot: AI 模型和机器人实现 / implementations for AI models and bots 
+* bot: AI 模型和机器人实现 / implementations for AI models and bots
 * common: 共同使用的支持代码 commonly used supporting code
 * libriichi & libriichi3p: 编译完成的 libriichi 库文件 / For compiled libriichi libraries
 
@@ -95,18 +103,19 @@ This program supports different types of AI models. The 'Local' Model type uses 
 
 - 基于 Mortal 模型和 MJAI 协议
   Based on Mortal Model an MJAI protocol
-  
+
   Mortal: https://github.com/Equim-chan/Mortal
 - 设计和功能实现基于 Akagi
   Design and implementation based on Akagi
-  
+
   Akagi: https://github.com/shinkuan/Akagi
 - 参考 Reference
   Mahjong Soul API: https://github.com/MahjongRepository/mahjong_soul_api
 - MJAI协议参考 / MJAI Protocol Reference
-  
+
   MJAI: https://mjai.app
 
 ## 许可 / License
+
 本项目使用 GNU GPL v3 许可协议。  
 协议全文请见 [LICENSE](LICENSE)

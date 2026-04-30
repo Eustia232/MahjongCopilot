@@ -1,12 +1,14 @@
 """ Import libriichi3p module """
-import sys
+import importlib.util
 import os
 import platform
-import importlib.util
+import sys
+
 from common.utils import sub_file
 
 assert sys.version_info >= (3, 10), "Python version must be 3.10 or higher"
 assert sys.version_info <= (3, 12), "Python version must be 3.12 or lower"
+
 
 def load_module():
     """ Determine system specifics and load the appropriate module file"""
@@ -31,7 +33,7 @@ def load_module():
     file_path = sub_file("libriichi3p", filename)
     if not os.path.exists(file_path):
         raise ImportError(f"Could not find file: {file_path}")
-    
+
     # Attempt to load the .pyd file
     spec = importlib.util.spec_from_file_location("libriichi3p", file_path)
     if spec and spec.loader:
@@ -40,6 +42,6 @@ def load_module():
         return module
     else:
         raise ImportError(f"Could not import: {file_path}")
-    
-libriichi3p = load_module()
 
+
+libriichi3p = load_module()

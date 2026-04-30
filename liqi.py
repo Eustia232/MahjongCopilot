@@ -2,16 +2,17 @@
 # Ref: https://github.com/747929791/majsoul_wrapper
 """
 
+import base64
 import json
 import struct
-import base64
 from enum import Enum
 from typing import List, Dict
 
 from google.protobuf.json_format import MessageToDict, ParseDict
+
 import common.utils as utils
-from liqi_proto import liqi_pb2 as pb
 from common.log_helper import LOGGER
+from liqi_proto import liqi_pb2 as pb
 
 
 class MsgType(Enum):
@@ -22,27 +23,30 @@ class MsgType(Enum):
     """ Client to server request, 0x02 + msg_id(2 bytes) + protobuf"""
     RES = 3
     """ Server to client response, 0x03 + msg_id(2 bytes) + protobuf"""
+
     def __repr__(self):
         return f"{self.name}({self.value})"
 
+
 class LiqiMethod:
     """ method string constants"""
-    heartbeat                   = '.lq.Lobby.heatbeat'
-    loginBeat                   = '.lq.Lobby.loginBeat'
-    fetchAccountActivityData    = '.lq.Lobby.fetchAccountActivityData'
-    fetchServerTime             = '.lq.Lobby.fetchServerTime'
-    oauth2Login                 = '.lq.Lobby.oauth2Login'
-    checkNetworkDelay           = '.lq.FastTest.checkNetworkDelay'
-    syncGame                    = '.lq.FastTest.syncGame'
-    finishSyncGame              = '.lq.FastTest.finishSyncGame'
-    enterGame                   = '.lq.FastTest.enterGame'
-    fetchGamePlayerState        = '.lq.FastTest.fetchGamePlayerState'
-    authGame                    = '.lq.FastTest.authGame'
-    terminateGame               = '.lq.FastTest.terminateGame'
-    ActionPrototype             = '.lq.ActionPrototype'
-    NotifyGameTerminate         = '.lq.NotifyGameTerminate'     # Game terminated early (players left custom game)
-    NotifyGameEndResult         = '.lq.NotifyGameEndResult'
-    NotifyGameBroadcast         = '.lq.NotifyGameBroadcast'     # player sent emoji
+    heartbeat = '.lq.Lobby.heatbeat'
+    loginBeat = '.lq.Lobby.loginBeat'
+    fetchAccountActivityData = '.lq.Lobby.fetchAccountActivityData'
+    fetchServerTime = '.lq.Lobby.fetchServerTime'
+    oauth2Login = '.lq.Lobby.oauth2Login'
+    checkNetworkDelay = '.lq.FastTest.checkNetworkDelay'
+    syncGame = '.lq.FastTest.syncGame'
+    finishSyncGame = '.lq.FastTest.finishSyncGame'
+    enterGame = '.lq.FastTest.enterGame'
+    fetchGamePlayerState = '.lq.FastTest.fetchGamePlayerState'
+    authGame = '.lq.FastTest.authGame'
+    terminateGame = '.lq.FastTest.terminateGame'
+    ActionPrototype = '.lq.ActionPrototype'
+    NotifyGameTerminate = '.lq.NotifyGameTerminate'  # Game terminated early (players left custom game)
+    NotifyGameEndResult = '.lq.NotifyGameEndResult'
+    NotifyGameBroadcast = '.lq.NotifyGameBroadcast'  # player sent emoji
+
 
 class LiqiAction:
     """ Liqi msg ['data']['name'] string consts for method==ActionPrototype"""
@@ -55,8 +59,8 @@ class LiqiAction:
     Hule = 'ActionHule'
     NoTile = 'ActionNoTile'
     LiuJu = 'ActionLiuJu'
-    MJStart = 'ActionMJStart' 
-    
+    MJStart = 'ActionMJStart'
+
 
 keys = [0x84, 0x5e, 0x4e, 0x42, 0x39, 0xa2, 0x1f, 0x60, 0x1c]
 
@@ -67,6 +71,7 @@ def decode(data: bytes):
         u = (23 ^ len(data)) + 5 * i + keys[i % len(keys)] & 255
         data[i] ^= u
     return bytes(data)
+
 
 # Just XOR it back
 def encode(data: bytes):
@@ -79,11 +84,12 @@ def encode(data: bytes):
 
 class LiqiProto:
     """ converting Majsoul protobuf data captured from websocket to readable json messages"""
+
     def __init__(self):
         self.msg_id = 1
         self.tot = 0
         self.res_type = dict()
-        jsonf = utils.sub_file('liqi_proto','liqi.json')
+        jsonf = utils.sub_file('liqi_proto', 'liqi.json')
         self.jsonProto = json.load(open(jsonf, 'r', encoding='utf-8'))
 
     def init(self):
@@ -91,16 +97,16 @@ class LiqiProto:
         self.res_type.clear()
 
     def parse(self, flow_msg) -> dict:
-        #parse一帧WS flow msg，要求按顺序parse
+        # parse一帧WS flow msg，要求按顺序parse
         if isinstance(flow_msg, bytes):
             buf = flow_msg
         else:
             buf = flow_msg.content
             # from_client = flow_msg.from_client
         result = dict()
-        msg_type = MsgType(buf[0]) # 通信报文类型
+        msg_type = MsgType(buf[0])  # 通信报文类型
         if msg_type == MsgType.NOTIFY:
-            msg_block = fromProtobuf(buf[1:])        # 解析剩余报文结构
+            msg_block = fromProtobuf(buf[1:])  # 解析剩余报文结构
             method_name = msg_block[0]['data'].decode()
 
             # msg_block结构通常为
@@ -118,18 +124,18 @@ class LiqiProto:
                 dict_obj['data'] = action_dict_obj
             msg_id = -1
         else:
-            msg_id = struct.unpack('<H', buf[1:3])[0]       # 小端序解析报文编号(0~255)
-            msg_block = fromProtobuf(buf[3:])               # 解析剩余报文结构
+            msg_id = struct.unpack('<H', buf[1:3])[0]  # 小端序解析报文编号(0~255)
+            msg_block = fromProtobuf(buf[3:])  # 解析剩余报文结构
             # """
             #     msg_block结构通常为
             #     [{'id': 1, 'type': 'string', 'data': b'.lq.FastTest.authGame'},
             #     {'id': 2, 'type': 'string','data': b'protobuf_bytes'}]
             # """
             if msg_type == MsgType.REQ:
-                assert(msg_id < 1 << 16)
-                assert(len(msg_block) == 2)
+                assert (msg_id < 1 << 16)
+                assert (len(msg_block) == 2)
                 # assert(msg_id not in self.res_type)
-                method_name = msg_block[0]['data'].decode()                
+                method_name = msg_block[0]['data'].decode()
                 _, lq, service, rpc = method_name.split('.')
                 proto_domain = self.jsonProto['nested'][lq]['nested'][service]['methods'][rpc]
                 liqi_pb2_req = getattr(pb, proto_domain['requestType'])
@@ -139,8 +145,8 @@ class LiqiProto:
                     pb, proto_domain['responseType']))
                 self.msg_id = msg_id
             elif msg_type == MsgType.RES:
-                assert(len(msg_block[0]['data']) == 0)
-                assert(msg_id in self.res_type)
+                assert (len(msg_block[0]['data']) == 0)
+                assert (msg_id in self.res_type)
                 method_name, liqi_pb2_res = self.res_type.pop(msg_id)
                 proto_obj = liqi_pb2_res.FromString(msg_block[1]['data'])
                 dict_obj = MessageToDict(proto_obj, including_default_value_fields=True)
@@ -148,10 +154,10 @@ class LiqiProto:
                 LOGGER.error('unknow msg (type=%s): %s', msg_type, buf)
                 return None
         result = {'id': msg_id, 'type': msg_type,
-                'method': method_name, 'data': dict_obj}
+                  'method': method_name, 'data': dict_obj}
         self.tot += 1
         return result
-    
+
     def parse_syncGame(self, liqi_data):
         """ sync game
         params:
@@ -165,20 +171,20 @@ class LiqiProto:
         return msgs
 
     def parse_syncGameActions(self, dict_obj):
-        dict_obj['data'] = MessageToDict(getattr(pb, dict_obj['name']).FromString(base64.b64decode(dict_obj['data'])), including_default_value_fields=True)
+        dict_obj['data'] = MessageToDict(getattr(pb, dict_obj['name']).FromString(base64.b64decode(dict_obj['data'])),
+                                         including_default_value_fields=True)
         msg_id = -1
         result = {'id': msg_id, 'type': MsgType.NOTIFY,
                   'method': '.lq.ActionPrototype', 'data': dict_obj}
         return result
 
-    
     def compose(self, data, msg_id=-1):
         """ compose liqi req/res message from dict data"""
         if data['type'] == MsgType.NOTIFY:
             return self.compose_notify(data)
         msg_block = [
             {'id': 1, 'type': 'string', 'data': b'.lq.FastTest.authGame'},
-            {'id': 2, 'type': 'string','data': b'protobuf_bytes'}
+            {'id': 2, 'type': 'string', 'data': b'protobuf_bytes'}
         ]
         _, lq, service, rpc = data['method'].split('.')
         proto_domain = self.jsonProto['nested'][lq]['nested'][service]['methods'][rpc]
@@ -189,7 +195,7 @@ class LiqiProto:
         msg_block[0]['data'] = data['method'].encode()
         msg_block[1]['data'] = message.SerializeToString()
         if msg_id == -1:
-            compose_id = (self.msg_id-8)%256
+            compose_id = (self.msg_id - 8) % 256
         else:
             compose_id = msg_id
         if data['type'] == MsgType.REQ:
@@ -202,12 +208,11 @@ class LiqiProto:
         else:
             raise NotImplementedError("only support req/res")
 
-
     def compose_notify(self, data):
         """ compose liqi notify message"""
         msg_block = [
             {'id': 1, 'type': 'string', 'data': b'.lq.FastTest.authGame'},
-            {'id': 2, 'type': 'string','data': b'protobuf_bytes'}
+            {'id': 2, 'type': 'string', 'data': b'protobuf_bytes'}
         ]
 
         _, _lq, message_name = data['method'].split('.')
@@ -234,12 +239,12 @@ def toVarint(x: int) -> bytes:
     length = 0
     if x == 0:
         return b'\x00'
-    while(x > 0):
+    while (x > 0):
         length += 1
         data += (x & 127) << base
         x >>= 7
         if x > 0:
-            data += 1 << (base+7)
+            data += 1 << (base + 7)
         base += 8
     return data.to_bytes(length, 'little')
 
@@ -248,11 +253,11 @@ def parseVarint(buf, p):
     # parse a varint from protobuf
     data = 0
     base = 0
-    while(p < len(buf)):
+    while (p < len(buf)):
         data += (buf[p] & 127) << base
         base += 7
         p += 1
-        if buf[p-1] >> 7 == 0:
+        if buf[p - 1] >> 7 == 0:
             break
     return (data, p)
 
@@ -264,20 +269,20 @@ def fromProtobuf(buf) -> List[Dict]:
     # """
     p = 0
     result = []
-    while(p < len(buf)):
+    while (p < len(buf)):
         block_begin = p
         block_type = (buf[p] & 7)
         block_id = buf[p] >> 3
         p += 1
         if block_type == 0:
-            #varint
+            # varint
             block_type = 'varint'
             data, p = parseVarint(buf, p)
         elif block_type == 2:
-            #string
+            # string
             block_type = 'string'
             s_len, p = parseVarint(buf, p)
-            data = buf[p:p+s_len]
+            data = buf[p:p + s_len]
             p += s_len
         else:
             raise ValueError(f"Unknown type: {block_type}, at {p}")
@@ -293,10 +298,10 @@ def toProtobuf(data: List[Dict]) -> bytes:
     result = b''
     for d in data:
         if d['type'] == 'varint':
-            result += ((d['id'] << 3)+0).to_bytes(length=1, byteorder='little')
+            result += ((d['id'] << 3) + 0).to_bytes(length=1, byteorder='little')
             result += toVarint(d['data'])
         elif d['type'] == 'string':
-            result += ((d['id'] << 3)+2).to_bytes(length=1, byteorder='little')
+            result += ((d['id'] << 3) + 2).to_bytes(length=1, byteorder='little')
             result += toVarint(len(d['data']))
             result += d['data']
         else:

@@ -1,13 +1,13 @@
 """ Bot for mjapi"""
 
 import time
-from common.settings import Settings
-from common.log_helper import LOGGER
-from common.utils import random_str
-from common.mj_helper import MjaiType
-from bot.mjapi.mjapi import MjapiClient
 
 from bot.bot import Bot, GameMode
+from bot.mjapi.mjapi import MjapiClient
+from common.log_helper import LOGGER
+from common.mj_helper import MjaiType
+from common.settings import Settings
+from common.utils import random_str
 
 
 class BotMjapi(Bot):
@@ -18,32 +18,34 @@ class BotMjapi(Bot):
     bound = 256
 
     """ MJAPI based mjai bot"""
-    def __init__(self, setting:Settings) -> None:
+
+    def __init__(self, setting: Settings) -> None:
         super().__init__("MJAPI Bot")
         self.st = setting
         self.api_usage = None
         self.mjapi = MjapiClient(self.st.mjapi_url)
         self._login_or_reg()
         self.id = -1
-        self.ignore_next_turn_self_reach:bool = False
-        
+        self.ignore_next_turn_self_reach: bool = False
+
     @property
     def info_str(self):
         return f"{self.name} [{self.st.mjapi_model_select}] (Usage: {self.api_usage})"
-        
+
     def _login_or_reg(self):
         if not self.st.mjapi_user:
             self.st.mjapi_user = random_str(6)
-            LOGGER.info("Created  random mjapi username:%s", self.st.mjapi_user)        
-        if self.st.mjapi_secret:    # login
+            LOGGER.info("Created  random mjapi username:%s", self.st.mjapi_user)
+        if self.st.mjapi_secret:  # login
             LOGGER.debug("Logging in with user: %s", self.st.mjapi_user)
             self.mjapi.login(self.st.mjapi_user, self.st.mjapi_secret)
-        else:         # try register  
-            LOGGER.debug("Registering in with user: %s", self.st.mjapi_user)          
+        else:  # try register
+            LOGGER.debug("Registering in with user: %s", self.st.mjapi_user)
             res_reg = self.mjapi.register(self.st.mjapi_user)
             self.st.mjapi_secret = res_reg['secret']
             self.st.save_json()
-            LOGGER.info("Registered new user [%s] with MJAPI. User name and secret saved to settings.", self.st.mjapi_user)
+            LOGGER.info("Registered new user [%s] with MJAPI. User name and secret saved to settings.",
+                        self.st.mjapi_user)
             self.mjapi.login(self.st.mjapi_user, self.st.mjapi_secret)
 
         model_list = self.mjapi.list_models()
@@ -67,12 +69,12 @@ class BotMjapi(Bot):
         LOGGER.debug("Deleting bot %s", self.name)
         if self.initialized:
             self.mjapi.stop_bot()
-        if self.mjapi.token:    # update usage and logout on deleting
+        if self.mjapi.token:  # update usage and logout on deleting
             self.st.mjapi_usage = self.mjapi.get_usage()
             self.st.save_json()
             self.mjapi.logout()
 
-    def _init_bot_impl(self, _mode:GameMode=GameMode.MJ4P):
+    def _init_bot_impl(self, _mode: GameMode = GameMode.MJ4P):
         self.mjapi.start_bot(self.seat, BotMjapi.bound, self.model_name)
         self.id = -1
 
@@ -92,11 +94,11 @@ class BotMjapi(Bot):
 
         return reaction
 
-    def react(self, input_msg:dict, recurse=True) -> dict | None:
+    def react(self, input_msg: dict, recurse=True) -> dict | None:
         # input_msg['can_act'] = True
         msg_type = input_msg['type']
         if self.ignore_next_turn_self_reach:
-            if  msg_type == MjaiType.REACH and input_msg['actor'] == self.seat:
+            if msg_type == MjaiType.REACH and input_msg['actor'] == self.seat:
                 LOGGER.debug("Ignoring repetitive self reach msg, reach msg already sent to AI last turn")
                 return None
             self.ignore_next_turn_self_reach = False
@@ -131,7 +133,7 @@ class BotMjapi(Bot):
         for (i, start) in enumerate(range(0, len(input_list), BotMjapi.batch_size)):
             reaction = self._react_batch_impl(
                 input_list[start:start + BotMjapi.batch_size],
-                can_act= i + 1 == num_batches)
+                can_act=i + 1 == num_batches)
         return reaction
 
     def _react_batch_impl(self, input_list, can_act):

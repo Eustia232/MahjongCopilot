@@ -2,11 +2,14 @@
 
 From: https://mjai.app/docs/mjai-protocol
 
-Our Mjai protocol is largely based on Gimite's original Mjai protocol, with a few minor changes. The majority of the implementation is based on Mortal's libriichi. Some rules have been added, such as the rule that players pay a penalty when they make an runtime error.
+Our Mjai protocol is largely based on Gimite's original Mjai protocol, with a few minor changes. The majority of the
+implementation is based on Mortal's libriichi. Some rules have been added, such as the rule that players pay a penalty
+when they make an runtime error.
 
 ## Overview
 
-First, 4 players listen for connections as TCP servers. Then, the game simulator sends JSON event messages to the players until the game end.
+First, 4 players listen for connections as TCP servers. Then, the game simulator sends JSON event messages to the
+players until the game end.
 
 ## Tile format
 
@@ -23,7 +26,8 @@ Unseen tile: "?"
 ### Example JSON events
 
 The player receives a list of JSON event messages up to the next actionable event.
-Below is example JSON messages. "<-" represents a message from the game simulator. "->" represents a message from a player.
+Below is example JSON messages. "<-" represents a message from the game simulator. "->" represents a message from a
+player.
 
 Line breaks
 For readability, line breaks have been added in the messages. The output of the simulator does not include line breaks.
@@ -52,7 +56,9 @@ The following flowchart shows the order of JSON events to be handled.
 
 ### Start Game
 
-id represents the seat number in the game. 0 represents the chiicha (起家; first dealer),1 the shimocha (下家; player to the right) of the chiicha, 2 the toimen (対面; player across) of the chiicha, 3 the kamicha (上家; player to the left) of the chiicha.
+id represents the seat number in the game. 0 represents the chiicha (起家; first dealer),1 the shimocha (下家; player to
+the right) of the chiicha, 2 the toimen (対面; player across) of the chiicha, 3 the kamicha (上家; player to the left)
+of the chiicha.
 
 The player always returns a "none" event.
 
@@ -84,7 +90,8 @@ Since start_kyoku events are not actionable, you will not receive only a start_k
 
 In a single kyoku (局; round), the "tsumo" event is one of the most common events.
 
-If the "actor" attribute of the JSON data matches the player's ID, the "tsumo" event becomes an actionable event. According to the rules of the mahjong game, some of the following events can be output as a response:
+If the "actor" attribute of the JSON data matches the player's ID, the "tsumo" event becomes an actionable event.
+According to the rules of the mahjong game, some of the following events can be output as a response:
 
 ```
 <- [{"type":"tsumo","actor":1,"pai":"?"},
@@ -221,7 +228,8 @@ ankou (3) + 1 other discard
 
 ### Hora (Ron Agari)
 
-After hora, end_kyoku event follows. If the game is not finished, the start_kyoku event follows and the next kyoku (局; round) starts.
+After hora, end_kyoku event follows. If the game is not finished, the start_kyoku event follows and the next kyoku (局;
+round) starts.
 
 ```
 <- [{"type":"dahai","actor":1,"pai":"3m","tsumogiri":true},

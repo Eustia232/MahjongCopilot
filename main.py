@@ -16,11 +16,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from gui.main_gui import MainGUI
+from bot_manager import BotManager
 from common import utils
 from common.log_helper import LogHelper
 from common.settings import Settings
-from bot_manager import BotManager
+from gui.main_gui import MainGUI
 
 
 def main():
@@ -32,6 +32,7 @@ def main():
     bot_manager = BotManager(setting)
     gui = MainGUI(setting, bot_manager)
     gui.mainloop()
+
 
 if __name__ == "__main__":
     main()

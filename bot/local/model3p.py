@@ -1,10 +1,12 @@
 """ Model 3p"""
-#pylint:disable=no-member, C0115, C0116
+# pylint:disable=no-member, C0115, C0116
 from functools import partial
 from typing import Optional, Tuple, Union
+
 import torch
-from torch import nn, Tensor
 from libriichi3p.consts import obs_shape, oracle_obs_shape, ACTION_SPACE
+from torch import nn, Tensor
+
 
 class ChannelAttention(nn.Module):
     def __init__(self, channels, ratio=16, actv_builder=nn.ReLU, bias=True):
@@ -26,14 +28,15 @@ class ChannelAttention(nn.Module):
         x = weight.unsqueeze(-1) * x
         return x
 
+
 class ResBlock(nn.Module):
     def __init__(
-        self,
-        channels,
-        *,
-        norm_builder = nn.Identity,
-        actv_builder = nn.ReLU,
-        pre_actv = False,
+            self,
+            channels,
+            *,
+            norm_builder=nn.Identity,
+            actv_builder=nn.ReLU,
+            pre_actv=False,
     ):
         super().__init__()
         self.pre_actv = pre_actv
@@ -66,16 +69,17 @@ class ResBlock(nn.Module):
             out = self.actv(out)
         return out
 
+
 class ResNet(nn.Module):
     def __init__(
-        self,
-        in_channels,
-        conv_channels,
-        num_blocks,
-        *,
-        norm_builder = nn.Identity,
-        actv_builder = nn.ReLU,
-        pre_actv = False,
+            self,
+            in_channels,
+            conv_channels,
+            num_blocks,
+            *,
+            norm_builder=nn.Identity,
+            actv_builder=nn.ReLU,
+            pre_actv=False,
     ):
         super().__init__()
 
@@ -83,9 +87,9 @@ class ResNet(nn.Module):
         for _ in range(num_blocks):
             blocks.append(ResBlock(
                 conv_channels,
-                norm_builder = norm_builder,
-                actv_builder = actv_builder,
-                pre_actv = pre_actv,
+                norm_builder=norm_builder,
+                actv_builder=actv_builder,
+                pre_actv=pre_actv,
             ))
 
         layers = [nn.Conv1d(in_channels, conv_channels, kernel_size=3, padding=1, bias=False)]
@@ -103,6 +107,7 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         return self.net(x)
+
 
 class Brain(nn.Module):
     def __init__(self, *, conv_channels, num_blocks, is_oracle=False, version=1):
@@ -136,12 +141,12 @@ class Brain(nn.Module):
                 raise ValueError(f'Unexpected version {self.version}')
 
         self.encoder = ResNet(
-            in_channels = in_channels,
-            conv_channels = conv_channels,
-            num_blocks = num_blocks,
-            norm_builder = norm_builder,
-            actv_builder = actv_builder,
-            pre_actv = pre_actv,
+            in_channels=in_channels,
+            conv_channels=conv_channels,
+            num_blocks=num_blocks,
+            norm_builder=norm_builder,
+            actv_builder=actv_builder,
+            pre_actv=pre_actv,
         )
         self.actv = actv_builder()
 
@@ -184,6 +189,7 @@ class Brain(nn.Module):
         self._freeze_bn = value
         return self.train(self.training)
 
+
 class AuxNet(nn.Module):
     def __init__(self, dims=None):
         super().__init__()
@@ -192,6 +198,7 @@ class AuxNet(nn.Module):
 
     def forward(self, x):
         return self.net(x).split(self.dims, dim=-1)
+
 
 class DQN(nn.Module):
     def __init__(self, *, version=1):
@@ -227,4 +234,4 @@ class DQN(nn.Module):
         mask_sum = mask.sum(-1, keepdim=True)
         a_mean = a_sum / mask_sum
         q = (v + a - a_mean).masked_fill(~mask, -torch.inf)
-        return q   
+        return q

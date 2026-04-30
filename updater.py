@@ -1,17 +1,18 @@
 """ Updater class for getting update info from website and update the main program"""
-import threading
-import subprocess
-import sys
 import os
 import re
 import shutil
+import subprocess
+import sys
+import threading
 import zipfile
-from enum import Enum,auto
+from enum import Enum, auto
+
 import requests
 
-from common.utils import Folder, WEBSITE
 import common.utils as utils
 from common.log_helper import LOGGER
+from common.utils import Folder, WEBSITE
 
 VERSION_FILE = "version"
 UPDATE_FILE = "MahjongCopilot.zip"
@@ -23,6 +24,7 @@ HELP_PATH = r"/help"
 - Upload zip and version file to website update folder
 """
 
+
 class UpdateStatus(Enum):
     """ Update status enum"""
     NONE = 0
@@ -31,36 +33,37 @@ class UpdateStatus(Enum):
     NEW_VERSION = auto()
     DOWNLOADING = auto()
     UNZIPPING = auto()
-    PREPARED = auto()           # update download/unzipped and ready to apply
+    PREPARED = auto()  # update download/unzipped and ready to apply
     ERROR = auto()
 
-    
+
 class Updater:
     """ handles version check and update"""
-    def __init__(self, update_url:str):
-        self.urlbase:str = update_url
+
+    def __init__(self, update_url: str):
+        self.urlbase: str = update_url
         if not self.urlbase.endswith("/"):
             self.urlbase += "/"
-        self.timeout_dl:int = 15
+        self.timeout_dl: int = 15
         # read version number from file "version"
         try:
             self.local_version = None
             with open(utils.sub_file(".", VERSION_FILE), 'r', encoding='utf-8') as f:
                 self.local_version = str(f.read()).strip()
-        except:#pylint:disable=bare-except
+        except:  # pylint:disable=bare-except
             LOGGER.error("Cannot read version file!")
-            
-        self.web_version:str = '0'
-        self.dl_progress:str = ""               # downloaded percentage
-        self.update_status:UpdateStatus = UpdateStatus.NONE
-        self.update_exception:Exception = None
-        
-        self.help_html:str = None       # help html text from web
-        self.help_exception:Exception = None
-        
-    
+
+        self.web_version: str = '0'
+        self.dl_progress: str = ""  # downloaded percentage
+        self.update_status: UpdateStatus = UpdateStatus.NONE
+        self.update_exception: Exception = None
+
+        self.help_html: str = None  # help html text from web
+        self.help_exception: Exception = None
+
     def load_help(self):
         """ update html in thread"""
+
         def task_update():
             url = WEBSITE + HELP_PATH
             LOGGER.info("Loading help html from %s", url)
@@ -71,23 +74,22 @@ class Updater:
             else:
                 self.help_html = html_text
                 LOGGER.info("Finished loading help html")
-                
+
         threading.Thread(
             name="UpdateHTML",
             target=task_update,
             daemon=True
         ).start()
-        
-    
-    def get_html(self, url:str) -> str:
+
+    def get_html(self, url: str) -> str:
         """ get html text from url, and process it"""
         try:
-            self.help_exception = None        
-            response = requests.get(url, timeout=15) # Send a GET request to the URL
+            self.help_exception = None
+            response = requests.get(url, timeout=15)  # Send a GET request to the URL
             # Check if the request was successful (HTTP status code 200)
             if response.status_code != 200:
                 response.raise_for_status()
-            
+
             # process text: remove/replace some tags
             res_text = response.text
             rm_patterns = [
@@ -97,23 +99,23 @@ class Updater:
                 r'<link[^>]*>',
                 r'<img[^>]*>',
                 r'<nav[^>]*>',
-            ]   # patterns to remove
+            ]  # patterns to remove
             for p in rm_patterns:
                 res_text = re.sub(p, '', res_text, flags=re.DOTALL)
             rep_patterns = {
                 r'<code[^>]*>(.*?)</code>': lambda m: f'<i>{m.group(1)}</i>',
             }
             for p, r in rep_patterns.items():
-                res_text = re.sub(p, r, res_text, flags=re.DOTALL)            
+                res_text = re.sub(p, r, res_text, flags=re.DOTALL)
             return res_text
-                
+
         except Exception as e:
             self.help_exception = e
             return None
-    
-    
+
     def check_update(self):
         """ check for update in thread. update web version number"""
+
         def check_ver():
             try:
                 self.update_status = UpdateStatus.CHECKING
@@ -128,17 +130,16 @@ class Updater:
                 self.update_exception = e
                 self.update_status = UpdateStatus.ERROR
                 LOGGER.error(e)
-        
+
         t = threading.Thread(
             target=check_ver,
             name="Check_update",
             daemon=True
         )
         t.start()
-        
-    
+
     def is_webversion_newer(self) -> bool:
-        """ check if web version is newer than local version"""        
+        """ check if web version is newer than local version"""
         try:
             if self.web_version:
                 # convert a.b.c to 000a000b000c and compare
@@ -146,16 +147,15 @@ class Updater:
                 web_v_int = int(''.join(f"{part:0>4}" for part in self.web_version.split(".")))
                 if web_v_int > local_v_int:
                     return True
-        except: #pylint:disable=bare-except
+        except:  # pylint:disable=bare-except
             return False
-        
-        
-    def download_file(self, fname:str) -> str:
+
+    def download_file(self, fname: str) -> str:
         """ download file and update progress (blocking)
         Params:
             fname (str): file name to download
         returns:
-            str: downloaded file path"""        
+            str: downloaded file path"""
         save_file = utils.sub_file(Folder.TEMP, fname)
         with requests.get(self.urlbase + fname, stream=True, timeout=self.timeout_dl) as res:
             res.raise_for_status()
@@ -168,12 +168,11 @@ class Updater:
                     file.write(chunk)
                     # update progress
                     downloaded += len(chunk)
-                    pct = downloaded/total_length*100 if total_length > 0 else 0
-                    self.dl_progress = f"{downloaded/1000/1000:.1f}/{total_length/1000/1000:.1f} MB ({pct:.1f}%)"
+                    pct = downloaded / total_length * 100 if total_length > 0 else 0
+                    self.dl_progress = f"{downloaded / 1000 / 1000:.1f}/{total_length / 1000 / 1000:.1f} MB ({pct:.1f}%)"
         return save_file
-    
-                    
-    def unzip_file(self, fname:str) -> str:
+
+    def unzip_file(self, fname: str) -> str:
         """ unzip file to its folder
         returns:
             str: extracted folder path
@@ -185,17 +184,16 @@ class Updater:
         with zipfile.ZipFile(fname, 'r') as zip_ref:
             zip_ref.extractall(extract_path)
         return str(extract_path)
-    
-                        
+
     def prepare_update(self):
         """ Prepare update in thread: download and unzip file"""
-        if sys.platform == "win32":     # check system support
+        if sys.platform == "win32":  # check system support
             pass
         else:
             self.update_status = UpdateStatus.ERROR
             self.update_exception = RuntimeError("Update only supports Windows for now.")
             return
-        
+
         def update_task():
             try:
                 self.update_status = UpdateStatus.DOWNLOADING
@@ -210,23 +208,22 @@ class Updater:
                 self.update_exception = e
                 self.update_status = UpdateStatus.ERROR
                 LOGGER.error(e)
-            
+
         t = threading.Thread(
             target=update_task,
             name="UpdateThread",
             daemon=True
         )
         t.start()
-        
-        
+
     def start_update(self):
         """ Call batch command to start update and then restart main program """
-        
+
         if sys.platform == "win32":
             exec_path = sys.executable
             exec_name = os.path.basename(exec_path)
             root_folder = str(utils.sub_folder("."))
-            update_folder = str(utils.sub_folder(Folder.TEMP)/Folder.UPDATE)
+            update_folder = str(utils.sub_folder(Folder.TEMP) / Folder.UPDATE)
             cmd = f"""
             @echo off
             echo Updating {exec_name} ...
@@ -254,7 +251,7 @@ class Updater:
         elif sys.platform == "darwin":
             exec_name = os.path.basename(sys.executable)
             root_folder = str(utils.sub_folder("."))
-            update_folder = str(utils.sub_folder(Folder.TEMP)/Folder.UPDATE)
+            update_folder = str(utils.sub_folder(Folder.TEMP) / Folder.UPDATE)
             cmd = f"""
             #!/bin/bash
             echo "Updating {exec_name} in 5 seconds..."
@@ -272,10 +269,10 @@ class Updater:
             with open(script_file, "w", encoding='utf-8') as f:
                 f.write(cmd)
             os.chmod(script_file, 0o755)  # Make the script executable
-            
+
             # Execute the script in a new Terminal window
             subprocess.Popen(["open", "-a", "Terminal.app", script_file])
-            
+
         else:
             # not supported
             pass

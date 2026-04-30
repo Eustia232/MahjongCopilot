@@ -1,5 +1,5 @@
-import sys
 import platform
+import sys
 
 assert sys.version_info >= (3, 10), f"Python version must be 3.10 or higher"
 assert sys.version_info <= (3, 12), f"Python version must be 3.12 or lower"
@@ -41,4 +41,3 @@ elif platform.system() == "Linux":
         from .libriichi312x8664unknownlinuxgnu import *
     else:
         raise Exception("Not supported Python version on Linux")
-    

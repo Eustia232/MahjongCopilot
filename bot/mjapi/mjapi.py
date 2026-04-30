@@ -5,20 +5,22 @@ API 文档: https://pastebin.com/wks80EsZ
 
 import requests
 
+
 class MjapiClient:
     """ MJAPI API wrapper"""
-    def __init__(self, base_url:str, timeout:float=5):
+
+    def __init__(self, base_url: str, timeout: float = 5):
         self.base_url = base_url
         self.timeout = timeout
-        self.token:str = None
+        self.token: str = None
         self.headers = {}
 
     def set_bearer_token(self, token):
         """Set the bearer token for authentication."""
         self.token = token
         self.headers['Authorization'] = f'Bearer {token}'
-    
-    def post_req(self, path:str, json=None, raise_error:bool=True):
+
+    def post_req(self, path: str, json=None, raise_error: bool = True):
         """ send POST to API and process response"""
         try:
             full_url = f'{self.base_url}{path}'
@@ -29,8 +31,8 @@ class MjapiClient:
                 raise e
             else:
                 return None
-    
-    def get_req(self, path:str, raise_error:bool=True):
+
+    def get_req(self, path: str, raise_error: bool = True):
         """ send GET to API and process response"""
         try:
             full_url = f'{self.base_url}{path}'
@@ -41,9 +43,9 @@ class MjapiClient:
                 raise e
             else:
                 return None
-        
-    def _process_res(self, res:requests.Response, raise_error:bool):
-        """ return results or raise error"""            
+
+    def _process_res(self, res: requests.Response, raise_error: bool):
+        """ return results or raise error"""
         if res.ok:
             return res.json() if res.content else None
         elif 'error' in res.json():
@@ -53,8 +55,6 @@ class MjapiClient:
             return res.json()
         else:
             raise RuntimeError(f"Unexpected API response {res.status_code}: {res.text}")
-        
-       
 
     def register(self, name):
         """Register a new user with a name."""

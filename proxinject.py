@@ -1,24 +1,27 @@
 """ Inject socks5 proxy into windows process using proxinjector-cli.exe"""
 
-import threading
-import subprocess
 import pathlib
-import time
+import subprocess
 import sys
-from common.utils import Folder, sub_run_args
+import threading
+import time
+
 from common.log_helper import LOGGER
+from common.utils import Folder, sub_run_args
+
 
 class ProxyInjector:
     """ Inject socks5 proxy into windows process"""
+
     def __init__(self):
-        self.p_name:str = None
-        self.proxy_ip:str = None
-        self.proxy_port:int = None
-        
-        self._thread:threading.Thread = None
+        self.p_name: str = None
+        self.proxy_ip: str = None
+        self.proxy_port: int = None
+
+        self._thread: threading.Thread = None
         self._stop_event = threading.Event()
 
-    def start(self, process_name:str, proxy_ip:str, proxy_port:int):
+    def start(self, process_name: str, proxy_ip: str, proxy_port: int):
         """ Start injecting socks5 proxy into the process
         params:
             process_name(str): name of the process to inject
@@ -40,31 +43,31 @@ class ProxyInjector:
             daemon=True,
         )
         self._thread.start()
-    
+
     def is_running(self) -> bool:
         """ return True if the injection thread is running"""
         if self._thread and self._thread.is_alive():
             return True
         else:
             return False
-        
-    def stop(self, join_thread:bool=False):
+
+    def stop(self, join_thread: bool = False):
         """ stop thread"""
         if self.is_running():
             self._stop_event.set()
             if join_thread:
                 self._thread.join()
             self._thread = None
-        
+
     def run(self):
         """ run the injection process"""
-        try:            
+        try:
             proxy = f'{self.proxy_ip}:{self.proxy_port}'
             LOGGER.info("Start injecting, process=%s, proxy(socks5)=%s", self.p_name, proxy)
             pi_path = pathlib.Path(Folder.PROXINJECT) / 'proxinjector-cli.exe'
             if not pi_path.is_file():
                 raise FileNotFoundError(f"Not found: {pi_path}")
-            
+
             cmds = [
                 str(pi_path),
                 '-n', self.p_name,
@@ -85,10 +88,9 @@ class ProxyInjector:
                         cmds, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                         startupinfo=startup_info)
                 time.sleep(0.5)
-                
+
             if process and process.poll() is None:
                 process.kill()
             LOGGER.info("Proxy injection stopped.")
         except Exception as e:
             LOGGER.error("ProxyInjector Error: %s", e, exc_info=True)
-        
