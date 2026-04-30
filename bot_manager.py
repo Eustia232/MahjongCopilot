@@ -56,6 +56,7 @@ class BotManager:
         self.is_loading_bot:bool = False                # is bot being loaded
         self.main_thread_exception:Exception = None     # Exception that had stopped the main thread
         self.game_exception:Exception = None            # game run time error (but does not break main thread)        
+        self.pending_browser_shutdown:bool = False      # schedule requested shutdown after game ends
         
         
     def start(self):
@@ -127,6 +128,14 @@ class BotManager:
         ms_url = self.st.ms_url
         proxy = self.mitm_server.proxy_str
         self.browser.start(ms_url, proxy, self.st.browser_width, self.st.browser_height, self.st.enable_chrome_ext)
+
+    def request_browser_shutdown(self):
+        """ Request browser shutdown. If in game, wait until game ends."""
+        self.pending_browser_shutdown = True
+        if not self.is_in_game():
+            LOGGER.info("No active game. Shutting down browser now.")
+            self.browser.stop(True)
+            self.pending_browser_shutdown = False
     
     def is_browser_zoom_off(self):
         """ check browser zoom level, return true if zoomlevel is not 1"""
@@ -427,6 +436,10 @@ class BotManager:
             self.browser.overlay_clear_guidance()
         self.game_exception = None
         self.automation.on_end_game()
+        if self.pending_browser_shutdown:
+            LOGGER.info("Shutting down browser after game end.")
+            self.browser.stop(True)
+            self.pending_browser_shutdown = False
             
     
     def _update_overlay_conditions_met(self) -> bool:

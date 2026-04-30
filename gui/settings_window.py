@@ -16,8 +16,8 @@ class SettingsWindow(tk.Toplevel):
         super().__init__(parent)
         self.st = setting
 
-        self.geometry('700x725')
-        self.minsize(700,725)
+        self.geometry('700x850')
+        self.minsize(700,850)
         # self.resizable(False, False)
         # set position: within main window
         parent_x = parent.winfo_x()
@@ -109,7 +109,51 @@ class SettingsWindow(tk.Toplevel):
         self.proxy_inject_var = tk.BooleanVar(value=self.st.enable_proxinject)
         check_proxy_inject = ttk.Checkbutton(
             main_frame, variable=self.proxy_inject_var, text=self.st.lan().CLIENT_INJECT_PROXY, width=std_wid*2)
-        check_proxy_inject.grid(row=cur_row, column=2, columnspan=2, **args_entry)  
+        check_proxy_inject.grid(row=cur_row, column=2, columnspan=2, **args_entry)
+
+        # sep
+        cur_row += 1
+        sep = ttk.Separator(main_frame, orient=tk.HORIZONTAL)
+        sep.grid(row=cur_row, column=0, columnspan=4, sticky="ew", pady=5)
+
+        # Schedule settings
+        cur_row += 1
+        _label = ttk.Label(main_frame, text=self.st.lan().SCHEDULE_TITLE)
+        _label.grid(row=cur_row, column=0, **args_label)
+        self.schedule_enable_var = tk.BooleanVar(value=self.st.schedule_enabled)
+        schedule_enable_entry = ttk.Checkbutton(
+            main_frame, variable=self.schedule_enable_var, text=self.st.lan().SCHEDULE_ENABLE, width=std_wid)
+        schedule_enable_entry.grid(row=cur_row, column=1, **args_entry)
+        schedule_mode_options = [self.st.lan().SCHEDULE_MODE_FIXED, self.st.lan().SCHEDULE_MODE_ROTATE]
+        self.schedule_mode_var = tk.StringVar(
+            value=self.st.lan().SCHEDULE_MODE_ROTATE if self.st.schedule_mode == "rotate" else self.st.lan().SCHEDULE_MODE_FIXED)
+        schedule_mode_entry = ttk.Combobox(
+            main_frame, textvariable=self.schedule_mode_var, values=schedule_mode_options, state="readonly", width=std_wid)
+        schedule_mode_entry.grid(row=cur_row, column=2, **args_entry)
+
+        cur_row += 1
+        _label = ttk.Label(main_frame, text=self.st.lan().SCHEDULE_FIXED_START)
+        _label.grid(row=cur_row, column=0, **args_label)
+        self.schedule_fixed_start_var = tk.StringVar(value=self.st.schedule_fixed_start)
+        schedule_fixed_start_entry = ttk.Entry(main_frame, textvariable=self.schedule_fixed_start_var, width=std_wid)
+        schedule_fixed_start_entry.grid(row=cur_row, column=1, **args_entry)
+        _label = ttk.Label(main_frame, text=self.st.lan().SCHEDULE_FIXED_END)
+        _label.grid(row=cur_row, column=2, **args_label)
+        self.schedule_fixed_end_var = tk.StringVar(value=self.st.schedule_fixed_end)
+        schedule_fixed_end_entry = ttk.Entry(main_frame, textvariable=self.schedule_fixed_end_var, width=std_wid)
+        schedule_fixed_end_entry.grid(row=cur_row, column=3, **args_entry)
+
+        cur_row += 1
+        _label = ttk.Label(main_frame, text=self.st.lan().SCHEDULE_ROTATE_ON)
+        _label.grid(row=cur_row, column=0, **args_label)
+        self.schedule_rotate_on_var = tk.DoubleVar(value=self.st.schedule_rotate_on_hours)
+        schedule_rotate_on_entry = ttk.Entry(main_frame, textvariable=self.schedule_rotate_on_var, width=std_wid)
+        schedule_rotate_on_entry.grid(row=cur_row, column=1, **args_entry)
+        _label = ttk.Label(main_frame, text=self.st.lan().SCHEDULE_ROTATE_OFF)
+        _label.grid(row=cur_row, column=2, **args_label)
+        self.schedule_rotate_off_var = tk.DoubleVar(value=self.st.schedule_rotate_off_hours)
+        schedule_rotate_off_entry = ttk.Entry(main_frame, textvariable=self.schedule_rotate_off_var, width=std_wid)
+        schedule_rotate_off_entry.grid(row=cur_row, column=3, **args_entry)
 
         # sep
         cur_row += 1
@@ -273,7 +317,7 @@ class SettingsWindow(tk.Toplevel):
         self.delay_random_upper_var = tk.DoubleVar(value=self.st.delay_random_upper)
         delay_upper_entry = tk.Entry(main_frame, textvariable= self.delay_random_upper_var,width=std_wid)
         delay_upper_entry.grid(row=cur_row, column=2, **args_entry)
-        
+
         # tips :Settings
         cur_row += 1
         label_settings = ttk.Label(main_frame, text=self.st.lan().SETTINGS_TIPS, width=std_wid*4)
@@ -352,6 +396,24 @@ class SettingsWindow(tk.Toplevel):
             return
         delay_lower_new = max(0,delay_lower_new)
         delay_upper_new = max(delay_lower_new, delay_upper_new)
+
+        # schedule settings
+        schedule_enabled_new = self.schedule_enable_var.get()
+        schedule_mode_label = self.schedule_mode_var.get()
+        if schedule_mode_label == self.st.lan().SCHEDULE_MODE_ROTATE:
+            schedule_mode_new = "rotate"
+        else:
+            schedule_mode_new = "fixed"
+        schedule_fixed_start_new = self.schedule_fixed_start_var.get()
+        schedule_fixed_end_new = self.schedule_fixed_end_var.get()
+        schedule_rotate_on_new = self.schedule_rotate_on_var.get()
+        schedule_rotate_off_new = self.schedule_rotate_off_var.get()
+        if not self.st.valid_time_str(schedule_fixed_start_new) or not self.st.valid_time_str(schedule_fixed_end_new):
+            messagebox.showerror("⚠", self.st.lan().SCHEDULE_FIXED_START + "/" + self.st.lan().SCHEDULE_FIXED_END)
+            return
+        if not self.st.valid_positive_float(schedule_rotate_on_new) or not self.st.valid_positive_float(schedule_rotate_off_new):
+            messagebox.showerror("⚠", self.st.lan().SCHEDULE_ROTATE_ON + "/" + self.st.lan().SCHEDULE_ROTATE_OFF)
+            return
         
         # === save new values to setting ===        
         self.st.auto_launch_browser = self.auto_launch_var.get()
@@ -385,6 +447,21 @@ class SettingsWindow(tk.Toplevel):
         self.st.auto_reply_emoji_rate = reply_emoji_new        
         self.st.delay_random_lower = delay_lower_new
         self.st.delay_random_upper = delay_upper_new
+
+        rotate_reset = (
+            schedule_mode_new != self.st.schedule_mode or
+            schedule_rotate_on_new != self.st.schedule_rotate_on_hours or
+            schedule_rotate_off_new != self.st.schedule_rotate_off_hours or
+            not schedule_enabled_new
+        )
+        self.st.schedule_enabled = schedule_enabled_new
+        self.st.schedule_mode = schedule_mode_new
+        self.st.schedule_fixed_start = schedule_fixed_start_new
+        self.st.schedule_fixed_end = schedule_fixed_end_new
+        self.st.schedule_rotate_on_hours = schedule_rotate_on_new
+        self.st.schedule_rotate_off_hours = schedule_rotate_off_new
+        if rotate_reset:
+            self.st.schedule_rotate_next_switch_at = ""
         
         self.st.save_json()
         self.exit_save = True
