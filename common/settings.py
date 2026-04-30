@@ -79,6 +79,22 @@ class Settings:
         self.auto_join_level: int = self._get_value("auto_join_level", 1, self.valid_game_level)
         self.auto_join_mode: int = self._get_value("auto_join_mode", utils.GAME_MODES[0], self.valid_game_mode)
 
+        # Schedule settings
+        self.schedule_enabled: bool = self._get_value("schedule_enabled", False, self.valid_bool)
+        self.schedule_mode: str = self._get_value("schedule_mode", "fixed", self.valid_schedule_mode)
+        self.schedule_fixed_start: str = self._get_value("schedule_fixed_start", "08:00", self.valid_time_str)
+        self.schedule_fixed_end: str = self._get_value("schedule_fixed_end", "14:00", self.valid_time_str)
+        self.schedule_rotate_on_hours: float = self._get_value("schedule_rotate_on_hours", 4.0,
+                                                               self.valid_positive_float)
+        self.schedule_rotate_off_hours: float = self._get_value("schedule_rotate_off_hours", 3.0,
+                                                                self.valid_positive_float)
+        self.schedule_rotate_next_switch_at: str = self._get_value("schedule_rotate_next_switch_at", "",
+                                                                   self.valid_str)
+        self.schedule_rotate_state_on: bool = self._get_value("schedule_rotate_state_on", True, self.valid_bool)
+
+        # Force schedule off and reset rotate time on startup
+        self.schedule_enabled = False
+        self.schedule_rotate_next_switch_at = ""
         self.save_json()
         LOGGER.info("Settings initialized and saved to %s", self._json_file)
 
@@ -172,3 +188,31 @@ class Settings:
             if url.startswith(p):
                 return True
         return False
+
+    def valid_schedule_mode(self, mode: str) -> bool:
+        """ return True if schedule mode is valid"""
+        return mode in ("fixed", "rotate")
+
+    def valid_time_str(self, value: str) -> bool:
+        """ return True if time format is HH:MM"""
+        if not isinstance(value, str):
+            return False
+        parts = value.split(':')
+        if len(parts) != 2:
+            return False
+        try:
+            hour = int(parts[0])
+            minute = int(parts[1])
+        except ValueError:
+            return False
+        return 0 <= hour <= 23 and 0 <= minute <= 59
+
+    def valid_positive_float(self, value) -> bool:
+        """ return True if value is positive number"""
+        if not isinstance(value, (int, float)):
+            return False
+        return value > 0
+
+    def valid_str(self, value) -> bool:
+        """ return True if value is a string"""
+        return isinstance(value, str)

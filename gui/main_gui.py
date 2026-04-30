@@ -5,7 +5,13 @@ GUI functions: controlling browser settings, displaying AI guidance info, game s
 """
 
 import os
+<<<<<<< HEAD
 from tkinter import messagebox
+=======
+import datetime
+import tkinter as tk
+from tkinter import ttk, messagebox
+>>>>>>> feature/scheduler
 
 from bot_manager import BotManager, mjai_reaction_2_guide
 from common.log_helper import LogHelper
@@ -51,9 +57,19 @@ class MainGUI(tk.Tk):
         # create window widgets
         self._create_widgets()
 
+<<<<<<< HEAD
         self.bot_manager.start()  # start the main program
         self.gui_update_delay = 50  # in ms
         self._update_gui_info()  # start updating gui info
+=======
+        self.bot_manager.start()        # start the main program
+        self.gui_update_delay = 50      # in ms
+        self.schedule_update_delay = 1000  # in ms
+        self._schedule_status_text = ""
+        self._update_gui_info()         # start updating gui info
+        self._schedule_tick()
+        
+>>>>>>> feature/scheduler
 
     def _create_widgets(self):
         """ Create all widgets in the main window"""
@@ -161,10 +177,25 @@ class MainGUI(tk.Tk):
         )
         self.text_gameinfo.grid(row=cur_row, **grid_args)
         self.grid_frame.grid_rowconfigure(cur_row, weight=1)
+<<<<<<< HEAD
 
+=======
+        
+        # === schedule info ===
+        cur_row += 1
+        self.schedule_info_var = tk.StringVar()
+        self.text_schedule = ttk.Label(
+            self.grid_frame, 
+            textvariable=self.schedule_info_var,
+            foreground="blue"
+        )
+        self.text_schedule.grid(row=cur_row, column=0, sticky='w', padx=5, pady=2)
+        self.grid_frame.grid_rowconfigure(cur_row, weight=0)
+        
+>>>>>>> feature/scheduler
         # === Model info ===
         cur_row += 1
-        self.model_bar = StatusBar(self.grid_frame, 2)
+        self.model_bar = StatusBar(self.grid_frame, 3)
         self.model_bar.grid(row=cur_row, column=0, sticky='ew', padx=1, pady=1)
         self.grid_frame.grid_rowconfigure(cur_row, weight=0)
 
@@ -217,6 +248,133 @@ class MainGUI(tk.Tk):
     def _on_btn_log_clicked(self):
         # LOGGER.debug('Open log')
         os.startfile(LogHelper.log_file_name)
+<<<<<<< HEAD
+=======
+
+    def _schedule_tick(self):
+        try:
+            self._apply_schedule_logic()
+        except Exception as e:
+            LOGGER.error("Error in schedule tick: %s", e, exc_info=True)
+        self.after(self.schedule_update_delay, self._schedule_tick)
+
+    def _apply_schedule_logic(self):
+        if not self.st.schedule_enabled:
+            self._schedule_status_text = ""
+            return
+        if self.st.schedule_mode == "fixed":
+            is_on, next_switch = self._fixed_schedule_state()
+            if self.bot_manager.pending_browser_shutdown:
+                status = self.st.lan().SCHEDULE_STATUS_WAITING
+            else:
+                status = self.st.lan().SCHEDULE_STATUS_ON if is_on else self.st.lan().SCHEDULE_STATUS_OFF
+            self._schedule_status_text = f"{self.st.lan().SCHEDULE_TITLE}: {status}, {self.st.lan().SCHEDULE_NEXT_SWITCH}: {next_switch}"
+        else:
+            is_on, next_switch = self._rotate_schedule_state()
+            remaining = self._rotate_remaining(next_switch)
+            if self.bot_manager.pending_browser_shutdown:
+                status = self.st.lan().SCHEDULE_STATUS_WAITING
+            else:
+                status = self.st.lan().SCHEDULE_STATUS_ON if is_on else self.st.lan().SCHEDULE_STATUS_OFF
+            self._schedule_status_text = f"{self.st.lan().SCHEDULE_TITLE}: {status}, {remaining}"
+        if is_on:
+            self._schedule_turn_on()
+        else:
+            self._schedule_turn_off()
+
+    def _schedule_turn_on(self):
+        if self.bot_manager.pending_browser_shutdown:
+            self.bot_manager.pending_browser_shutdown = False
+        if not self.bot_manager.browser.is_running():
+            self.bot_manager.start_browser()
+        if not self.st.enable_automation:
+            self.bot_manager.enable_automation()
+        if not self.st.auto_join_game:
+            self.bot_manager.enable_autojoin()
+
+    def _schedule_turn_off(self):
+        if self.st.enable_automation:
+            self.bot_manager.disable_automation()
+        if self.st.auto_join_game:
+            self.bot_manager.disable_autojoin()
+        if self.bot_manager.browser.is_running():
+            self.bot_manager.request_browser_shutdown()
+
+    def _fixed_schedule_state(self) -> tuple[bool, str]:
+        try:
+            start = datetime.datetime.strptime(self.st.schedule_fixed_start, "%H:%M").time()
+            end = datetime.datetime.strptime(self.st.schedule_fixed_end, "%H:%M").time()
+        except ValueError:
+            return False, ""
+        now = datetime.datetime.now().time()
+        if start <= end:
+            is_on = start <= now < end
+        else:
+            is_on = now >= start or now < end
+        next_switch = self._fixed_next_switch_text(start, end)
+        return is_on, next_switch
+
+    def _fixed_next_switch_text(self, start:datetime.time, end:datetime.time) -> str:
+        now = datetime.datetime.now()
+        today_start = now.replace(hour=start.hour, minute=start.minute, second=0, microsecond=0)
+        today_end = now.replace(hour=end.hour, minute=end.minute, second=0, microsecond=0)
+        if start <= end:
+            if now < today_start:
+                next_time = today_start
+            elif now < today_end:
+                next_time = today_end
+            else:
+                next_time = today_start + datetime.timedelta(days=1)
+        else:
+            if now < today_end:
+                next_time = today_end
+            elif now < today_start:
+                next_time = today_start
+            else:
+                next_time = today_end + datetime.timedelta(days=1)
+        return next_time.strftime("%Y-%m-%d %H:%M")
+
+    def _rotate_schedule_state(self) -> tuple[bool, str]:
+        now = datetime.datetime.now()
+        next_switch = self._parse_datetime(self.st.schedule_rotate_next_switch_at)
+        if next_switch is None:
+            hours = self.st.schedule_rotate_on_hours if self.st.schedule_rotate_state_on else self.st.schedule_rotate_off_hours
+            next_switch = now + datetime.timedelta(hours=hours)
+            self.st.schedule_rotate_next_switch_at = next_switch.isoformat()
+            self.st.save_json()
+        if now >= next_switch:
+            self.st.schedule_rotate_state_on = not self.st.schedule_rotate_state_on
+            hours = self.st.schedule_rotate_on_hours if self.st.schedule_rotate_state_on else self.st.schedule_rotate_off_hours
+            next_switch = now + datetime.timedelta(hours=hours)
+            self.st.schedule_rotate_next_switch_at = next_switch.isoformat()
+            self.st.save_json()
+        return self.st.schedule_rotate_state_on, next_switch
+
+    def _rotate_remaining(self, next_switch: datetime.datetime) -> str:
+        now = datetime.datetime.now()
+        delta = next_switch - now
+        total_seconds = int(delta.total_seconds())
+        if total_seconds <= 0:
+            return "即将切换"
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        if hours > 0:
+            return f"剩余: {hours}h {minutes}m {seconds}s"
+        elif minutes > 0:
+            return f"剩余: {minutes}m {seconds}s"
+        else:
+            return f"剩余: {seconds}s"
+
+    def _parse_datetime(self, value:str):
+        if not value:
+            return None
+        try:
+            return datetime.datetime.fromisoformat(value)
+        except ValueError:
+            return None
+        
+>>>>>>> feature/scheduler
 
     def _on_btn_settings_clicked(self):
         # open settings dialog (modal/blocking)
@@ -381,6 +539,15 @@ class MainGUI(tk.Tk):
         status_str, icon = self._get_status_text_icon(gi)
         self.status_bar.update_column(2, status_str, icon)
 
+<<<<<<< HEAD
+=======
+        # schedule status
+        if self._schedule_status_text:
+            self.schedule_info_var.set(self._schedule_status_text)
+        else:
+            self.schedule_info_var.set("")
+
+>>>>>>> feature/scheduler
         ### update overlay
         self.bot_manager.update_overlay()
 
