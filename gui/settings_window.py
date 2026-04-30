@@ -18,13 +18,8 @@ class SettingsWindow(tk.Toplevel):
         super().__init__(parent)
         self.st = setting
 
-<<<<<<< HEAD
-        self.geometry('700x725')
-        self.minsize(700, 725)
-=======
         self.geometry('700x850')
-        self.minsize(700,850)
->>>>>>> feature/scheduler
+        self.minsize(700, 850)
         # self.resizable(False, False)
         # set position: within main window
         parent_x = parent.winfo_x()
@@ -116,11 +111,7 @@ class SettingsWindow(tk.Toplevel):
         # proxy inject
         self.proxy_inject_var = tk.BooleanVar(value=self.st.enable_proxinject)
         check_proxy_inject = ttk.Checkbutton(
-<<<<<<< HEAD
             main_frame, variable=self.proxy_inject_var, text=self.st.lan().CLIENT_INJECT_PROXY, width=std_wid * 2)
-        check_proxy_inject.grid(row=cur_row, column=2, columnspan=2, **args_entry)
-=======
-            main_frame, variable=self.proxy_inject_var, text=self.st.lan().CLIENT_INJECT_PROXY, width=std_wid*2)
         check_proxy_inject.grid(row=cur_row, column=2, columnspan=2, **args_entry)
 
         # sep
@@ -140,7 +131,8 @@ class SettingsWindow(tk.Toplevel):
         self.schedule_mode_var = tk.StringVar(
             value=self.st.lan().SCHEDULE_MODE_ROTATE if self.st.schedule_mode == "rotate" else self.st.lan().SCHEDULE_MODE_FIXED)
         schedule_mode_entry = ttk.Combobox(
-            main_frame, textvariable=self.schedule_mode_var, values=schedule_mode_options, state="readonly", width=std_wid)
+            main_frame, textvariable=self.schedule_mode_var, values=schedule_mode_options, state="readonly",
+            width=std_wid)
         schedule_mode_entry.grid(row=cur_row, column=2, **args_entry)
 
         cur_row += 1
@@ -166,7 +158,6 @@ class SettingsWindow(tk.Toplevel):
         self.schedule_rotate_off_var = tk.DoubleVar(value=self.st.schedule_rotate_off_hours)
         schedule_rotate_off_entry = ttk.Entry(main_frame, textvariable=self.schedule_rotate_off_var, width=std_wid)
         schedule_rotate_off_entry.grid(row=cur_row, column=3, **args_entry)
->>>>>>> feature/scheduler
 
         # sep
         cur_row += 1
@@ -419,8 +410,6 @@ class SettingsWindow(tk.Toplevel):
         delay_lower_new = max(0, delay_lower_new)
         delay_upper_new = max(delay_lower_new, delay_upper_new)
 
-<<<<<<< HEAD
-=======
         # schedule settings
         schedule_enabled_new = self.schedule_enable_var.get()
         schedule_mode_label = self.schedule_mode_var.get()
@@ -438,8 +427,7 @@ class SettingsWindow(tk.Toplevel):
         if not self.st.valid_positive_float(schedule_rotate_on_new) or not self.st.valid_positive_float(schedule_rotate_off_new):
             messagebox.showerror("⚠", self.st.lan().SCHEDULE_ROTATE_ON + "/" + self.st.lan().SCHEDULE_ROTATE_OFF)
             return
-        
->>>>>>> feature/scheduler
+
         # === save new values to setting ===        
         self.st.auto_launch_browser = self.auto_launch_var.get()
         self.st.browser_width = width_new
@@ -473,8 +461,6 @@ class SettingsWindow(tk.Toplevel):
         self.st.delay_random_lower = delay_lower_new
         self.st.delay_random_upper = delay_upper_new
 
-<<<<<<< HEAD
-=======
         rotate_reset = (
             schedule_mode_new != self.st.schedule_mode or
             schedule_rotate_on_new != self.st.schedule_rotate_on_hours or
@@ -489,8 +475,7 @@ class SettingsWindow(tk.Toplevel):
         self.st.schedule_rotate_off_hours = schedule_rotate_off_new
         if rotate_reset:
             self.st.schedule_rotate_next_switch_at = ""
-        
->>>>>>> feature/scheduler
+
         self.st.save_json()
         self.exit_save = True
         if self.mitm_proxinject_updated:

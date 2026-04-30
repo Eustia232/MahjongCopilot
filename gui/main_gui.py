@@ -5,13 +5,9 @@ GUI functions: controlling browser settings, displaying AI guidance info, game s
 """
 
 import os
-<<<<<<< HEAD
-from tkinter import messagebox
-=======
 import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox
->>>>>>> feature/scheduler
 
 from bot_manager import BotManager, mjai_reaction_2_guide
 from common.log_helper import LogHelper
@@ -57,19 +53,12 @@ class MainGUI(tk.Tk):
         # create window widgets
         self._create_widgets()
 
-<<<<<<< HEAD
         self.bot_manager.start()  # start the main program
         self.gui_update_delay = 50  # in ms
-        self._update_gui_info()  # start updating gui info
-=======
-        self.bot_manager.start()        # start the main program
-        self.gui_update_delay = 50      # in ms
         self.schedule_update_delay = 1000  # in ms
         self._schedule_status_text = ""
-        self._update_gui_info()         # start updating gui info
+        self._update_gui_info()  # start updating gui info
         self._schedule_tick()
-        
->>>>>>> feature/scheduler
 
     def _create_widgets(self):
         """ Create all widgets in the main window"""
@@ -177,22 +166,17 @@ class MainGUI(tk.Tk):
         )
         self.text_gameinfo.grid(row=cur_row, **grid_args)
         self.grid_frame.grid_rowconfigure(cur_row, weight=1)
-<<<<<<< HEAD
-
-=======
         
         # === schedule info ===
         cur_row += 1
         self.schedule_info_var = tk.StringVar()
         self.text_schedule = ttk.Label(
-            self.grid_frame, 
+            self.grid_frame,
             textvariable=self.schedule_info_var,
             foreground="blue"
         )
         self.text_schedule.grid(row=cur_row, column=0, sticky='w', padx=5, pady=2)
         self.grid_frame.grid_rowconfigure(cur_row, weight=0)
-        
->>>>>>> feature/scheduler
         # === Model info ===
         cur_row += 1
         self.model_bar = StatusBar(self.grid_frame, 3)
@@ -248,8 +232,7 @@ class MainGUI(tk.Tk):
     def _on_btn_log_clicked(self):
         # LOGGER.debug('Open log')
         os.startfile(LogHelper.log_file_name)
-<<<<<<< HEAD
-=======
+
 
     def _schedule_tick(self):
         try:
@@ -373,8 +356,7 @@ class MainGUI(tk.Tk):
             return datetime.datetime.fromisoformat(value)
         except ValueError:
             return None
-        
->>>>>>> feature/scheduler
+
 
     def _on_btn_settings_clicked(self):
         # open settings dialog (modal/blocking)
@@ -539,15 +521,11 @@ class MainGUI(tk.Tk):
         status_str, icon = self._get_status_text_icon(gi)
         self.status_bar.update_column(2, status_str, icon)
 
-<<<<<<< HEAD
-=======
         # schedule status
         if self._schedule_status_text:
             self.schedule_info_var.set(self._schedule_status_text)
         else:
             self.schedule_info_var.set("")
-
->>>>>>> feature/scheduler
         ### update overlay
         self.bot_manager.update_overlay()
 
