@@ -95,6 +95,7 @@ class Settings:
         # Force schedule off and reset rotate time on startup
         self.schedule_enabled = False
         self.schedule_rotate_next_switch_at = ""
+        self.schedule_rotate_state_on = True
         self.save_json()
         LOGGER.info("Settings initialized and saved to %s", self._json_file)
 

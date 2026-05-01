@@ -475,6 +475,8 @@ class SettingsWindow(tk.Toplevel):
         self.st.schedule_rotate_off_hours = schedule_rotate_off_new
         if rotate_reset:
             self.st.schedule_rotate_next_switch_at = ""
+            if not schedule_enabled_new:
+                self.st.schedule_rotate_state_on = True
 
         self.st.save_json()
         self.exit_save = True
